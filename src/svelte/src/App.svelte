@@ -1,30 +1,68 @@
 <script lang="ts">
-	export let name: string;
+	import type { AuthInterface } from '../../includes/auth-manager'
+	import type { ModpackManager } from '../../includes/modpack-manager'
+	import type { SettingsInterface } from '../../includes/settings-manager'
+	let loaded = false;
+
+	let authInterface: AuthInterface;
+	let modpackManager: ModpackManager;
+	let settingsInterface: SettingsInterface;
+
+	import Nav from '../components/Nav.svelte';
+	import { onMount } from "svelte";
+
+	onMount(() => {
+		//@ts-expect-error
+		authInterface = window.authInterface;
+		//@ts-expect-error
+		modpackManager = window.modpackManager;
+		//@ts-expect-error
+		settingsInterface = window.settingsInterface;
+
+		loaded = true;
+	})
 </script>
 
+{#if loaded}
+
+<div id="bg" class="bg">
+	<div id="bg-opacity" class="color"></div>
+	<div id="bg-blur" class="filter"></div>
+	<div class="img">
+		<img id="bg-img" src="" alt=""/>
+		<video autoplay muted loop id="bg-video" src="" alt=""></video>
+	</div>
+</div>
+
+<div class="app-frame">
+	<div class="flex-filler invisible"></div>
+	<div id="app-minimize" class="minimize">
+		<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+			<g id="Component_53_1" data-name="Component 53 – 1" transform="translate(1)">
+			  <line id="Line_40" data-name="Line 40" x2="10" transform="translate(0 11)" fill="none" stroke="var(--app-icon-clr)" stroke-linecap="round" stroke-width="2"/>
+			  <line id="Line_41" data-name="Line 41" x2="10" fill="none"/>
+			</g>
+		</svg>              
+	</div>
+	<div id="app-reload" class="reload">
+		<svg xmlns="http://www.w3.org/2000/svg" width="11.99" height="11.713" viewBox="0 0 11.99 11.713">
+			<path id="Path_232" data-name="Path 232" d="M2053.858,1818.992a5.84,5.84,0,0,1-8.28,0c-.009-.009-.018-.027-.027-.036l-.82.82a.674.674,0,0,1-1.153-.477v-2.9a.681.681,0,0,1,.676-.676h2.9a.676.676,0,0,1,.477,1.153l-.82.82c.009.009.027.018.036.027a4.05,4.05,0,1,0,0-5.739.9.9,0,0,1-1.271-1.27,5.862,5.862,0,0,1,8.28,0A5.868,5.868,0,0,1,2053.858,1818.992Z" transform="translate(-2043.578 -1809)" fill="var(--app-icon-clr)"/>
+		</svg>
+	</div>
+	<div id="app-exit" class="exit">
+		<svg xmlns="http://www.w3.org/2000/svg" width="10.996" height="10.997" viewBox="0 0 10.996 10.997">
+			<g id="Component_51_10" data-name="Component 51 – 10" transform="translate(1.414 1.414)">
+			  <line id="Line_38" data-name="Line 38" x2="8.168" y2="8.168" fill="none" stroke="var(--app-icon-clr)" stroke-linecap="round" stroke-width="2"/>
+			  <line id="Line_39" data-name="Line 39" x1="8" y2="8" transform="translate(0.02 0.149)" fill="none" stroke="var(--app-icon-clr)" stroke-linecap="round" stroke-width="2"/>
+			</g>
+		</svg>
+	</div>
+</div>
+
+<Nav userData={authInterface.logged_user}></Nav>
+
 <main>
-	<h1>Hello {name}!</h1>
-	<p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
+	<h1>Проверка жопы на взлом</h1>
 </main>
 
-<style>
-	main {
-		text-align: center;
-		padding: 1em;
-		max-width: 240px;
-		margin: 0 auto;
-	}
-
-	h1 {
-		color: #ff3e00;
-		text-transform: uppercase;
-		font-size: 4em;
-		font-weight: 100;
-	}
-
-	@media (min-width: 640px) {
-		main {
-			max-width: none;
-		}
-	}
-</style>
+{/if}

@@ -84,9 +84,11 @@ function createMainWindow() {
             show: false,
         })
     
-        win.loadFile('./src/index.html');
+        win.loadFile('./src/svelte/index.html');
         win.on('ready-to-show', async () => {
+            win.show();
             resolve(win);
+            win.webContents.openDevTools();
         });
     
         win.webContents.on("devtools-opened", (err: string) => {

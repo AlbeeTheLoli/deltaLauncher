@@ -100,7 +100,7 @@ export class AutoUpdater {
             if (i == -1) i = 0;
             return {
                 name: res[i].name,
-                url: res[i].assets[0].browser_download_url,
+                url: (res[i].assets[0] || {browser_download_url: undefined}).browser_download_url,
             };
         } else {
             let i = res.findIndex((el: any) => el.name.split('-').length == 1)
@@ -108,13 +108,13 @@ export class AutoUpdater {
             if (i == -1) {
                 return {
                     name: res[0].name,
-                    url: res[0].assets[0].browser_download_url,
+                    url: (res[0].assets[0] || {browser_download_url: undefined}).browser_download_url,
                 };
             }
 
             return {
                 name: res[i].name,
-                url: res[i].assets[0].browser_download_url,
+                url: (res[i].assets[0] || {browser_download_url: undefined}).browser_download_url,
             };
         }
     }

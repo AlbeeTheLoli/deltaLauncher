@@ -62,6 +62,8 @@ const settings_pattern = {
     },
 };
 
+let dflt_bg = '../res/bg-light.jpg'
+
 interface theme {
     name: string,
     author: string,
@@ -311,11 +313,11 @@ export class SettingsInterface {
                 (document.getElementById('bg-video') as HTMLVideoElement).src = '';
                 document.body.classList.remove('video');
                 bg_el.parentElement?.parentElement?.classList.remove('plain');
-                let dflt = '../../res/bg-light.jpg';
+                let dflt = dflt_bg;
                 if (this._settings.appearance.theme) {
                     dflt = this._themes[this._settings.appearance.theme].default_bg;
                     if (dflt == '') {
-                        dflt = '../../res/bg-light.jpg';
+                        dflt = dflt_bg;
                     }
                 }
 
@@ -376,11 +378,11 @@ export class SettingsInterface {
                     (document.getElementById('bg-video') as HTMLVideoElement).src = '';
                     document.body.classList.remove('video');
                     bg_el.parentElement?.parentElement?.classList.remove('plain');
-                    let dflt = '../../res/bg-light.jpg';
+                    let dflt = dflt_bg;
                     if (this._settings.appearance.theme) {
                         dflt = this._themes[this._settings.appearance.theme].default_bg;
                         if (dflt == '') {
-                            dflt = '../../res/bg-light.jpg';
+                            dflt = dflt_bg;
                         }
                     }
     
