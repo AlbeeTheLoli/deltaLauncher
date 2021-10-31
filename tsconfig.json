@@ -1,0 +1,22 @@
+{
+    "exclude": [
+        "dist",
+        "src/app"
+    ],
+
+    "compilerOptions": {
+        "target": "esnext",
+        "module": "commonjs",
+        "allowJs": true,
+        "outDir": "./dist",
+        "removeComments": true,
+        "downlevelIteration": true,
+
+        "lib": ["DOM"],
+        "strict": true,
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
+    }
+}
