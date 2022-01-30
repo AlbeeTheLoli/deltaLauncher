@@ -1,4 +1,4 @@
-import type { remote as rmt, ipcRenderer as ipcR, ipcMain as ipcM, IpcMainEvent } from 'electron'
+import type { remote as rmt, ipcRenderer as ipcR, ipcMain as ipcM } from 'electron'
 import type fetchType from 'node-fetch'
 import keytar from 'keytar';
 
@@ -8,6 +8,14 @@ const log = logger.create('auth');
 log.variables.label = 'auth';
 log.transports.console.format = '{h}:{i}:{s} > [{label}] {text}';
 log.transports.file.format = '{h}:{i}:{s} > [{label}] {text}';
+
+export interface user {
+    id: number,
+    login: string,
+    email: string,
+    level: string,
+    slim_skin: boolean,
+};
 
 export class AuthInterface {
     private _getGlobal: typeof rmt.getGlobal;
@@ -44,12 +52,7 @@ export class AuthInterface {
 }
 
 export class AuthStorage {
-    public logged_user: {
-        login: string,
-        email: string,
-        level: string,
-        slim_skin: boolean,
-    } | null;
+    public logged_user: user | null;
 
     public users: any | null;
 

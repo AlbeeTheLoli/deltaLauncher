@@ -1,27 +1,62 @@
 <script lang="ts">
-	import type { AuthInterface } from '../../includes/auth-manager'
-	import type { ModpackManager } from '../../includes/modpack-manager'
-	import type { SettingsInterface } from '../../includes/settings-manager'
 	let loaded = false;
 
-	let authInterface: AuthInterface;
-	let modpackManager: ModpackManager;
-	let settingsInterface: SettingsInterface;
+	import { global } from './global';
 
-	import Nav from '../components/Nav.svelte';
-	import { onMount } from "svelte";
+	import Nav from '../components/nav/Nav.svelte';
+	import Footer from '../components/footer/Footer.svelte';
+	import Settings from './sections/Settings.svelte';
+	import Account from './sections/Account.svelte';
+	import Home from './sections/Home.svelte';
+	import { onDestroy, onMount } from "svelte";
+	import Overlay from '../components/overlays/Overlay.svelte';
+	import AskOverlay from '../components/overlays/AskOverlay.svelte';
+	import SelectOverlay from '../components/overlays/SelectOverlay.svelte';
+	import Checkbox from '../components/Checkbox.svelte';
+	import TextField from '../components/TextField.svelte';
 
-	onMount(() => {
+	enum SECTIONS {
+		HOME,
+		SETTINGS,
+		ACCOUNT,
+	}
+	let section_names: string[] = [
+		'Главная',
+        'Настройки',
+        'Аккаунт'
+    ]
+
+	let section = SECTIONS.SETTINGS;
+
+	onMount(async () => {
 		//@ts-expect-error
-		authInterface = window.authInterface;
+		$global.authInterface = window.authInterface;
 		//@ts-expect-error
-		modpackManager = window.modpackManager;
+		$global.modpackManager = window.modpackManager;
 		//@ts-expect-error
-		settingsInterface = window.settingsInterface;
+		$global.settingsManager = window.settingsInterface;
+
+		global.app = {
+			//@ts-expect-error
+			version: window.version,
+			//@ts-expect-error
+			os: window.os,
+		};
+
+		console.log('hello from renderer :)');
+		console.log('theme:', $global.authInterface.logged_user);
 
 		loaded = true;
 	})
+
+	onDestroy(() => {
+		$global.settingsManager.saveSync();
+	})
 </script>
+
+<Overlay />
+<AskOverlay />
+<SelectOverlay />
 
 {#if loaded}
 
@@ -59,10 +94,60 @@
 	</div>
 </div>
 
-<Nav userData={authInterface.logged_user}></Nav>
+<Nav {section_names} bind:section={section} userData={$global.authInterface.logged_user} />
 
 <main>
-	<h1>Проверка жопы на взлом</h1>
+	<TextField  />
+	<div class="section-wrapper" class:left={section < SECTIONS.HOME} class:right={section > SECTIONS.HOME}>
+		<Home />
+	</div>
+	<div class="section-wrapper" class:left={section < SECTIONS.SETTINGS} class:right={section > SECTIONS.SETTINGS}>
+		<Settings />
+	</div>
+	<div class="section-wrapper" class:left={section < SECTIONS.ACCOUNT} class:right={section > SECTIONS.ACCOUNT}>
+		<Account />
+	</div>
 </main>
 
+<Footer />
+
 {/if}
+
+<style>
+	main {
+		display: flex;
+		width: calc(100vw);
+		height: calc(100vh - 152px);
+		position: relative;
+	}
+
+	.section-wrapper {
+		height: 100%;
+		width: 100%;
+		pointer-events: all;
+		position: absolute;
+		top: 0;
+		left: 0;
+		min-width: calc(100vw);
+		min-height: calc(100vh - 152px);
+		opacity: 1;
+
+		transition: left .32s cubic-bezier(0.23, 1, 0.320, 1),
+                	opacity .32s cubic-bezier(0.23, 1, 0.320, 1);
+
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+
+	.section-wrapper.left {
+		pointer-events: none;
+		left: -32px;
+		opacity: 0;
+	}
+
+	.section-wrapper.right {
+		pointer-events: none;
+		left: 32px;
+		opacity: 0;
+	}
+</style>

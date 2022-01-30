@@ -34,6 +34,10 @@ const settings_pattern = {
             excavate: { minecraft_key: "key_oreexcavation.key.excavate", minecraft_code: 34, key_code: 12, key_name: "G" },
             shop: { minecraft_key: "key_key.ftbmoney.shop", minecraft_code: 35, key_code: 12, key_name: "H" },
         },
+        add_ons: {
+            optifine: { enabled: true},
+            inventory_tweaks: { enabled: false},
+        },
     },
     appearance: {
         reduced_motion: false,
@@ -210,7 +214,7 @@ export class SettingsInterface {
         return path.normalize(this._root);
     }
 
-    public set root(_) {}
+    public set root(_) {return}
 
     public get settings() {
         fs.ensureFileSync(this._settings_path);
@@ -219,19 +223,23 @@ export class SettingsInterface {
 
     public set settings(to) {
         this._settings = to;
+        return;
     }
 
     public async updateThemesList() {
         await remote.getGlobal('settingsStorage').updateThemesList();
         this._themes = remote.getGlobal('settingsStorage')._themes;
+        return;
     }
 
     public async save() {
         await remote.getGlobal('settingsStorage').save();
+        return;
     }
 
     public saveSync() {
         remote.getGlobal('settingsStorage').saveSync();
+        return;
     }
     
     //#region Appearance

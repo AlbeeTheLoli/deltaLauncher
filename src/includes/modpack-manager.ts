@@ -32,6 +32,35 @@ enum GRAPHICS_LEVELS {
     ULTRA // _ULTRA
 }
 
+interface IModpackInfo {
+    libs_version: string,
+    link: string,
+    ip: string,
+}
+
+export const MODPACK_INFO: {[key: string]: IModpackInfo} = {
+    'magicae': {
+        link: '',
+        libs_version: '1.12',
+        ip: '',
+    },
+    'fabrica': {
+        link: '',
+        libs_version: '1.12',
+        ip: '',
+    },
+    'statera': {
+        link: '',
+        libs_version: '1.12',
+        ip: '',
+    },
+    'insula': {
+        link: '',
+        libs_version: '1.12',
+        ip: '',
+    },
+}
+
 export class ModpackManager {
     private _graphics_level = GRAPHICS_LEVELS.DEFAULT;
     private _root = '';
@@ -40,6 +69,16 @@ export class ModpackManager {
     private _resources: any;
     private _settingsStorage: SettingsStorage;
     private log_location = log.transports.file.getFile().path.split('\\main.log')[0];
+
+    private _selected_modpack = 'magicae';
+    public set modpack(to: any) {
+        this._selected_modpack = to;
+        this._settingsStorage.settings.on_modpack = to;
+    }
+    
+    public get modpack() {
+        return this._selected_modpack;
+    }
 
     public downloader: Downloader;
 
@@ -60,32 +99,28 @@ export class ModpackManager {
     public updateModpackDirs() {
         this._modpacks = {
             magicae: {
-                link: '',
                 path: path.normalize(path.join(this._settingsStorage.settings.modpacks.magicae.path.replace(/%ROOT%/g, this._root), 'magicae')),
                 version: 1.0,
-                libs_version: '1.12',
                 installed: false,
+                ...MODPACK_INFO['magicae'],
             },
             fabrica: {
-                link: '',
                 path: path.normalize(path.join(this._settingsStorage.settings.modpacks.fabrica.path.replace(/%ROOT%/g, this._root), 'fabrica')),
                 version: 1.0,
-                libs_version: '1.12',
                 installed: true,
+                ...MODPACK_INFO['fabrica'],
             },
             statera: {
-                link: '',
                 path: path.normalize(path.join(this._settingsStorage.settings.modpacks.statera.path.replace(/%ROOT%/g, this._root), 'statera')),
                 version: 1.0,
-                libs_version: '1.12',
                 installed: false,
+                ...MODPACK_INFO['statera'],
             },
             insula: {
-                link: '',
                 path: path.normalize(path.join(this._settingsStorage.settings.modpacks.insula.path.replace(/%ROOT%/g, this._root), 'insula')),
                 version: 1.0,
-                libs_version: '1.12',
                 installed: false,
+                ...MODPACK_INFO['insula'],
             },
         };
 

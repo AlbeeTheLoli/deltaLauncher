@@ -42,7 +42,7 @@ function openStartWindow(): Promise<BrowserWindow> {
             minHeight: 724,
             frame: false,
             thickFrame: true,
-            icon: 'res/favicon.png',
+            icon: path.join(__dirname, '../src/res/favicon.png'),
             webPreferences: {
                 nodeIntegration: false,
                 preload: path.join(__dirname, 'preload.js'),
@@ -68,13 +68,13 @@ function openStartWindow(): Promise<BrowserWindow> {
 function createMainWindow() {
     return new Promise((resolve, _) => {
         let win = new BrowserWindow({
-            width: 1610,
+            width: 1600,
             height: 900,
             minWidth: 1000,
             minHeight: 724,
             frame: false,
             thickFrame: true,
-            icon: 'res/favicon.png',
+            icon: path.join(__dirname, '../src/res/favicon.png'),
             webPreferences: {
                 nodeIntegration: false,
                 preload: path.join(__dirname, 'preload.js'),

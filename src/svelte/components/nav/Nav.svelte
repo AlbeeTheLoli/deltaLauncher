@@ -1,26 +1,51 @@
 <script lang='ts'>
-    export let userData: {
-        login: string,
-    };
+    import type { user } from '../../../includes/auth-manager'
+    import { global } from '../../src/global';
+
+    export let userData: user;
+
+    export let section_names: string[];
+    export let section: number;
+
+    async function change_user() {
+        let users = {};
+        for (const k in $global.authInterface.users) {
+            const ussr = $global.authInterface.users[k];
+            users = {
+                ...users,
+                [ussr.id]: ussr.login, 
+            }
+        }
+
+        users = {
+            ...users,
+            '-1': 'Выйти',
+        }
+
+        let selected = await global.selectOverlay.select('Выберите аккаунт:', users);
+        if (selected == $global.authInterface.logged_user.id) return;
+        if (selected != '-1') {
+            $global.authInterface.switchUser(selected);
+        } else {
+            $global.authInterface.logout();
+        }
+    }
 </script>
 
 <header>
     <div id="header-nav" class="nav noselect">
-        <div class="nav-element active">Главная</div>
-        <div class="nav-element">Настройки</div>
-        <div class="nav-element">Аккаунт</div>
+        {#each section_names as _, i}
+            <div class="nav-element" class:active={section == i} on:click={() => section = i}>{section_names[i]}</div>
+        {/each}
     </div>
     <div class="flex-filler drag"></div>
     <div class="profile">
+        <div class="profile-picture">
+            <img id="profile-picture-img" src="D:/Pictures/Anime/Kyoko Kirigiri/5a43c6be6cbe4edcaf08fa24bfee02a7.jpg" alt="">
+        </div>
         <div class="profile-info">
             <h1 id="profile-login-el">{userData.login}</h1>
-            <p id="change-account" class="noselect">Сменить аккаунт</p>
-        </div>
-        <div class="bg">
-            <div style="opacity: .80;" class="color"></div>
-            <div class="img">
-                <img id="profile-picture-img" src="" alt="">
-            </div>
+            <p id="change-account" class="noselect" on:click={change_user}>Сменить аккаунт</p>
         </div>
     </div>
 </header>
@@ -47,7 +72,7 @@
     header >.nav > .nav-element {
         background: var(--header-nav-bg);
         cursor: pointer;
-        width: 128px;
+        padding: 0 32px;
         height: 100%;
         display: flex;
         align-items: center;
@@ -71,32 +96,38 @@
 
 
     header > .profile {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
         position: relative;
         height: 100%;
+        padding-left: 32px;
         width: var(--sidebar-width);
     }
 
-    .profile > .bg {
-        z-index: 0;
+    .profile > .profile-picture {
+        width: 42px;
+        height: 42px;
+        border-radius: 100%;
+        overflow: hidden;
+        margin-right: 32px;
     }
 
-    .profile > .bg > .color {
-        background-color: var(--header-profile-bg);
+    .profile > .profile-picture > img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
     
     .profile > .profile-info {
         color: var(--header-profile-text);
         z-index: 10;
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
         height: 100%;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         justify-content: center;
-        padding: 0 32px;
+        padding-right: 32px;
     }
 
     .profile-info > h1 {

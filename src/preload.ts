@@ -7,6 +7,11 @@ log.transports.file.format = '{h}:{i}:{s} > {text}';
 import fs from 'fs-extra';
 import os from 'os'
 
+import fetch from "node-fetch";
+
+//@ts-expect-error
+window.fetch = fetch;
+
 //  Allow importing in renderers
 //# DO NOT IMPORT ANYTHING THERE, ONLY TYPES
 window.exports = exports;
@@ -127,12 +132,14 @@ ipcRenderer.on('window-id', (_, arg) => {
 
 //@ts-expect-error
 window.onbeforeload = () => {
+    console.log('preloading... <<<');
+
     settingsInterface.theme = settingsInterface.settings.appearance.theme;
     settingsInterface.bg = settingsInterface.settings.appearance.bg;
     settingsInterface.filter_opacity = settingsInterface.settings.appearance.filter_opacity;
     settingsInterface.blur_amount = settingsInterface.settings.appearance.blur_amount;
 
-    console.log('onbeforeload');
+    console.log('preload done <<<');
 }
 
 //@ts-expect-error
@@ -145,13 +152,14 @@ window.os = os;
 window.onload = async () => {
     // settingsManager.theme = settingsManager.settings.appearance.theme;
     // settingsManager.bg = settingsManager.settings.appearance.bg;
-    console.log('onload');
+    console.log('loading... <<<');
 
     if (settingsInterface.settings.dev_mode) document.body.classList.add('dev');
     (document.getElementById('bg-video') as HTMLVideoElement).muted = settingsInterface.settings.appearance.muted;
     
     document.getElementById('app-exit')?.addEventListener('click', () => {
         console.log('exiting');
+        settingsInterface.saveSync();
         //@ts-expect-error
         window.browserWindow.exit();
     });
@@ -162,6 +170,7 @@ window.onload = async () => {
     });
 
     document.getElementById('app-reload')?.addEventListener('click', () => {
+        settingsInterface.saveSync();
         console.log('reloading');
         //@ts-expect-error
         window.browserWindow.reload();
@@ -170,13 +179,17 @@ window.onload = async () => {
     });
 
     window.onbeforeunload = () => {
+        console.log('unloading... <<<');
         //@ts-expect-error
         window.modpackManager.downloader.cancel();
-        console.log('BYE :)');
+
+        console.log('byee~~ sussy baka~ :)');
     }
 
     //@ts-expect-error
     window.browserWindow.show();
+
+    console.log('load done <<<');
 }
 
 window.console.log = log.info;

@@ -70,7 +70,7 @@
 
     --app-bg: var(--bg-primary);
     --app-text: var(--text-primary);
-    --app-icon-clr: var(--bg-primary);
+    --app-icon-clr: var(--text-primary);
 
     /* header (kinda obvious ngl) */
 
@@ -84,8 +84,7 @@
     --header-nav-bg-hover: rgba(var(--text-primary-rgb), .02);
     --header-nav-bg-active: var(--header-primary-bg);
     --header-nav-bg-active-hover: var(--header-primary-bg);
-    --header-profile-bg: var(--clr-primary);
-    --header-profile-text: var(--bg-primary);
+    --header-profile-text: var(--text-primary);
 
     /* main */
 
@@ -125,9 +124,36 @@
     --checkbox-checkmark: var(--text-primary);
 
     --slider-track: rgba(var(--text-primary-rgb), .16);
-    --slider-ticks: rgba(var(--text-primary-rgb), .16);
-    --slider-ticks-empty: rgba(var(--text-primary-rgb), .08);
-    --slider-ticks-active: rgba(var(--text-primary-rgb), .48);
+    --slider-ticks: rgba(var(--text-primary-rgb), .32);
+    --slider-ticks-empty: rgba(var(--text-primary-rgb), .16);
+    --slider-ticks-active: rgba(var(--text-primary-rgb), 1);
     --slider-thumb: var(--clr-primary);
     --slider-thumb-hover: var(--alt-tertiary);
+
+    
+
+    --dropmenu-main-bg: var(--bg-secondary);
+    --dropmenu-main-h1: var(--text-primary);
+    --dropmenu-main-p: var(--text-secondary);
+    --dropmenu-sub-even-bg: var(--bg-secondary);
+    --dropmenu-sub-odd-bg: var(--bg-secondary-alt);
+    --dropmenu-sub-h1: var(--text-primary);
+    --dropmenu-sub-p: var(--text-secondary);
+    --dropmenu-toggle-bg: var(--dropmenu-main-bg);
+    --dropmenu-toggle-fill: var(--dropmenu-main-h1);
+
+    --dropmenu-main-bg-hover: var(--alt-primary);
+    --dropmenu-main-h1-hover: var(--bg-primary);
+    --dropmenu-main-p-hover: var(--bg-secondary);
+    --dropmenu-sub-even-bg-hover: var(--alt-primary);
+    --dropmenu-sub-odd-bg-hover: var(--alt-secondary);
+    --dropmenu-sub-h1-hover: var(--bg-primary);
+    --dropmenu-sub-p-hover: var(--bg-secondary);
+    --dropmenu-toggle-bg-hover: var(--dropmenu-main-bg-hover);
+    --dropmenu-toggle-fill-hover: var(--dropmenu-main-h1-hover);
+
+    --dropmenu-main-h1-fs: 16px;
+    --dropmenu-main-p-fs: 13px;
+    --dropmenu-sub-h1-fs: 15px;
+    --dropmenu-sub-p-fs: 13px;
 }
