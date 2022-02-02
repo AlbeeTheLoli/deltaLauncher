@@ -1,7 +1,7 @@
 <script lang="ts">
-    export let blur_amount = '';
-    export let blur_opacity = '';
-    export let color = '';
+    export let blur_amount = 0;
+    export let blur_opacity = 0;
+    export let color = 0;
     export let src = '';
 </script>
 

@@ -3,16 +3,20 @@ import Events from 'events';
 import * as fs from 'fs-extra';
 import * as path from 'path'
 
+import deepMerge from 'lodash.merge'
+
 import logger from 'electron-log';
 const log = logger.create('settings');
 log.variables.label = 'settings';
 log.transports.console.format = '{h}:{i}:{s} > [{label}] {text}';
 log.transports.file.format = '{h}:{i}:{s} > [{label}] {text}';
 
+import { MODPACK_INFO, IModpackInfo } from './modpack.info';
+
 const settings_pattern = {
-    dev_mode: false,
+    dev_mode: true,
     on_page: 0,
-    on_modpack: "magicae",
+    on_modpack: Object.keys(MODPACK_INFO)[0],
     selected_user: -1,
     auto_go_to_server_thing: false,
     version: "",
@@ -23,8 +27,8 @@ const settings_pattern = {
         use_builtin_java: true,
         show_console_output: false,
         controls: {
-            crouch: { minecraft_key: "key_key.sneak", minecraft_code: 42, key_code: 12, key_name: "SHIFT" },
-            run: { minecraft_key: "key_key.sprint", minecraft_code: 29, key_code: 12, key_name: "CONTROL" },
+            crouch: { minecraft_key: "key_key.sneak", minecraft_code: 42, key_code: 12, key_name: "LSHIFT" },
+            run: { minecraft_key: "key_key.sprint", minecraft_code: 29, key_code: 12, key_name: "LCTRL" },
             forward: { minecraft_key: "key_key.forward", minecraft_code: 17, key_code: 87, key_name: "W" },
             back: { minecraft_key: "key_key.back", minecraft_code: 31, key_code: 83, key_name: "S" },
             left: { minecraft_key: "key_key.left", minecraft_code: 30, key_code: 12, key_name: "A" },
@@ -45,26 +49,23 @@ const settings_pattern = {
         theme: "",
         filter_opacity: 60,
         blur_amount: 0,
-        muted: true,
+        bg_volume: 50,
     },
     modpacks: {
         libs: {
             path: "%ROOT%/libs",
         },
-        magicae: {
-            path: "%ROOT%/modpacks",
-        },
-        fabrica: {
-            path: "%ROOT%/modpacks",
-        },
-        statera: {
-            path: "%ROOT%/modpacks",
-        },
-        insula: {
-            path: "%ROOT%/modpacks",
-        },
     },
 };
+
+for (const mdpck in MODPACK_INFO) {
+    settings_pattern.modpacks = {
+        ...settings_pattern.modpacks,
+        [mdpck]: {
+            path: "%ROOT%/modpacks",
+        },
+    }
+}
 
 let dflt_bg = '../res/bg-light.jpg'
 
@@ -108,7 +109,7 @@ export class SettingsStorage {
             console.error('', err);
         }
 
-        this._settings = Object.assign(this._settings, settings);
+        this._settings = deepMerge(this._settings, settings);
         this.saveSync();
 
         //. Get themes
@@ -244,15 +245,6 @@ export class SettingsInterface {
     
     //#region Appearance
 
-    public get bg() {
-        if (this._settings.appearance.bg == '') {
-            return this._settings.appearance.bg;
-        } else {
-            return path.normalize(this._settings.appearance.bg);
-        }
-        
-    }
-
     public set filter_opacity(to: number) {
         this.settings.appearance.filter_opacity = to;
         //@ts-expect-error
@@ -273,10 +265,37 @@ export class SettingsInterface {
         return this.settings.appearance.blur_amount;
     }
 
+    public set bg_volume(to: number) {
+        this.settings.appearance.bg_volume = to;
+        //@ts-expect-error
+        document.getElementById('bg-video').volume = to / 100;
+    }
+
+    public get bg_volume() {
+        return this.settings.appearance.bg_volume as number;
+    }
+
+    public set bg_video(to: boolean) { }
+
+    public get bg_video() {
+        let ext = path.extname(this.bg);
+        return ext == '.mp4' || ext == '.mov' || ext == '.ogg'
+    }
+
+    public get bg() {
+        if (this._settings.appearance.bg == '') {
+            return this._settings.appearance.bg;
+        } else {
+            return path.normalize(this._settings.appearance.bg);
+        }
+    }
+
+
     public set bg(to: string) {
         if (to === '1') { // plain BG
             log.info('applying plain bg');
             let bg_el = document.getElementById('bg-img');
+            this.bg_video = false;
             if (bg_el) {
                 (document.getElementById('bg-video') as HTMLVideoElement).src = '';
                 document.body.classList.remove('video');
@@ -285,6 +304,7 @@ export class SettingsInterface {
         } else if (to != undefined && to != '') {
             let ext = path.extname(to);   
             if (ext == '.png' || ext == '.jpeg' || ext == '.jpg' || ext == '.gif') {
+                this.bg_video = false;
                 log.info('applying image bg', to);
                 let bg_el = document.getElementById('bg-img') as HTMLImageElement;
                 if (bg_el) {
@@ -299,6 +319,7 @@ export class SettingsInterface {
                     }
                 }
             } else if (ext == '.mp4' || ext == '.mov' || ext == '.ogg') {
+                this.bg_video = true;
                 log.info('applying video bg', to);
                 let bg_el = document.getElementById('bg-video') as HTMLVideoElement;
                 if (bg_el) {
@@ -318,6 +339,7 @@ export class SettingsInterface {
             log.info(`setting default bg for '${this._settings.appearance.theme}'`);
             let bg_el = document.getElementById('bg-img') as HTMLImageElement;
             if (bg_el) {
+                this.bg_video = false;
                 (document.getElementById('bg-video') as HTMLVideoElement).src = '';
                 document.body.classList.remove('video');
                 bg_el.parentElement?.parentElement?.classList.remove('plain');
@@ -341,6 +363,7 @@ export class SettingsInterface {
         return new Promise((resolve, reject) => {
             if (to === '1') { // plain BG
                 log.info('applying plain bg');
+                this.bg_video = false;
                 let bg_el = document.getElementById('bg-img');
                 if (bg_el) {
                     (document.getElementById('bg-video') as HTMLVideoElement).src = '';
@@ -350,6 +373,7 @@ export class SettingsInterface {
             } else if (to != undefined && to != '') {
                 let ext = path.extname(to);   
                 if (ext == '.png' || ext == '.jpeg' || ext == '.jpg' || ext == '.gif') {
+                    this.bg_video = false;
                     log.info('applying image bg', to);
                     let bg_el = document.getElementById('bg-img') as HTMLImageElement;
                     if (bg_el) {
@@ -364,6 +388,7 @@ export class SettingsInterface {
                         }
                     }
                 } else if (ext == '.mp4' || ext == '.mov' || ext == '.ogg') {
+                    this.bg_video = true;
                     log.info('applying video bg', to);
                     let bg_el = document.getElementById('bg-video') as HTMLVideoElement;
                     if (bg_el) {
@@ -383,6 +408,7 @@ export class SettingsInterface {
                 log.info(`setting default bg for '${this._settings.appearance.theme}'`);
                 let bg_el = document.getElementById('bg-img') as HTMLImageElement;
                 if (bg_el) {
+                    this.bg_video = false;
                     (document.getElementById('bg-video') as HTMLVideoElement).src = '';
                     document.body.classList.remove('video');
                     bg_el.parentElement?.parentElement?.classList.remove('plain');

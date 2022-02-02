@@ -307,6 +307,8 @@
         font-weight: 700;
         width: 106px;
         opacity: .64;
+
+        transition: opacity .32s cubic-bezier(0.165, 0.84, 0.44, 1);
     }
 
     .k-v-pair:hover .k {
@@ -320,5 +322,9 @@
         opacity: .48;
 
         transition: opacity .32s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    .v:hover {
+        opacity: 1;
     }
 </style>

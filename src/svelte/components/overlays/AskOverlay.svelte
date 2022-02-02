@@ -59,7 +59,7 @@
         <p>{p}</p>
         <div bind:this={list_container} class="vertical-list" on:mouseenter={() => can_be_closen = false} on:mouseleave={() => can_be_closen = true}>
             {#each Object.values(_options) as option, i}
-                <Button type={option.type} locked onclick={() => answer(_options, i)}>
+                <Button type={option.type} onclick={() => answer(_options, i)}>
                     {option.body}
                 </Button>
                 <div class="overlay-empty"></div>

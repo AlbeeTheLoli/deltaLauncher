@@ -1,16 +1,17 @@
 <script lang='ts'>
-    import { bind } from "svelte/internal";
+    import { onMount } from "svelte";
 
     export let id: string;
     export let min: number = 0;
     export let max: number = 100;
-    export let step: number = 10;
+    export let step: number = .001;
     export let value_step: number = 2;
     export let unit: string = '';
     export let step_values: string[] = [];
     export let free: boolean = false;
 
     export let value = min;
+    export let onchange: Function = () => {};
 
     let el: HTMLDivElement;
     let pointer_el: HTMLDivElement;
@@ -18,11 +19,16 @@
     let min_val = min;
 
     let focused = false;
+
+    onMount(() => {
+        if (pointer_el) pointer_el.style.left = `${((value - min) / (max - min)) * (el.clientWidth - 2)}px`;
+    })
 </script>
 
 <div class="slider">
-    <input bind:value={value} min="{min}" max="{max}" step="{(step > 0 && !free) ? step : .001}" type="range" name="{id}-input" id="{id}-input" on:input={() => {
+    <input bind:value={value} min="{min}" max="{max}" step="{step > 0 ? step : .001}" type="range" name="{id}-input" id="{id}-input" on:input={() => {
         if (pointer_el) pointer_el.style.left = `${((value - min) / (max - min)) * (el.clientWidth - 2)}px`;
+        onchange(value);
     }}>
     <div bind:this={el} class="stops">
         {#if free}
@@ -35,7 +41,7 @@
             <div bind:this={pointer_el} class="stop pointer" style="position: absolute;">
                 <div></div>
                 <div class="value">
-                    {min}{unit}
+                    {value}{unit}
                 </div>
             </div>
             <div class="stop only-value">
@@ -90,7 +96,6 @@
     }
 
     .slider > input {
-        z-index: 1;
         -webkit-appearance: none;  /* Override default CSS styles */
         appearance: none;
 

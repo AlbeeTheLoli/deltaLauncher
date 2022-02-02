@@ -61,6 +61,10 @@ input {
     pointer-events: none;
 }
 
+.flex {
+    display: flex;
+}
+
 .flex-filler {
     flex: 1;
 }
@@ -278,8 +282,20 @@ input {
     opacity: 0;
 }
 
-/* checkboxes */
+/* scrollbar */
 
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
 
+.custom-scrollbar::-webkit-scrollbar-track {
+    background-color: rgba(var(--main-text-rgb), .16);
+}
 
-/* Buttons */
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--clr-primary);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--clr-tertiary);
+}

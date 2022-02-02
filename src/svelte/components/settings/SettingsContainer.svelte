@@ -68,6 +68,8 @@
     }
 
     .header .button-down > svg {
+        position: relative;
+        right: 2px;
         transform: rotate(0);
         transition: transform .16s cubic-bezier(0.165, 0.84, 0.44, 1);
     }
@@ -81,14 +83,13 @@
     }
 
     .content {
-        padding: 0 32px;
+        padding: 0 48px;
         width: 100%;
         /* height: 100%; */
         flex: 1;
         display: grid;
         grid-column-gap: 8px;
         grid-row-gap: 8px;
-        margin-left: 24px;
 
         grid-template-columns: repeat(auto-fill, 480px);
         grid-auto-flow: row;

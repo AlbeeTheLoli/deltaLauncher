@@ -38,7 +38,7 @@ function openStartWindow(): Promise<BrowserWindow> {
         let win = new BrowserWindow({
             width: 1610,
             height: 900,
-            minWidth: 1000,
+            minWidth: 1068,
             minHeight: 724,
             frame: false,
             thickFrame: true,
@@ -70,7 +70,7 @@ function createMainWindow() {
         let win = new BrowserWindow({
             width: 1600,
             height: 900,
-            minWidth: 1000,
+            minWidth: 1068,
             minHeight: 724,
             frame: false,
             thickFrame: true,
@@ -88,7 +88,7 @@ function createMainWindow() {
         win.on('ready-to-show', async () => {
             win.show();
             resolve(win);
-            win.webContents.openDevTools();
+            // win.webContents.openDevTools();
         });
     
         win.webContents.on("devtools-opened", (err: string) => {

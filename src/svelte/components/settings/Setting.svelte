@@ -19,7 +19,7 @@
     </div>
 
     {#if tip}
-        <div class="tip">
+        <div class="tip" in:fly={{y: -4, duration: 250}} out:fly={{y: -4, duration: 250}}>
             {#if tip.h1} <h1>{tip.h1}</h1> {/if}
             {#if tip.p} <p>{tip.p}</p> {/if}
         </div> 
@@ -60,7 +60,7 @@
         width: 100%;
         font-size: 12px;
         font-weight: 600;
-        opacity: .64;
+        opacity: .8;
         margin-bottom: 4px;
     }
 
@@ -69,6 +69,6 @@
         width: 100%;
         font-size: 12px;
         font-weight: 600;
-        opacity: .32;
+        opacity: .48;
     }
 </style>

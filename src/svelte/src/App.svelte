@@ -35,6 +35,14 @@
 		$global.modpackManager = window.modpackManager;
 		//@ts-expect-error
 		$global.settingsManager = window.settingsInterface;
+		//@ts-expect-error
+		$global.ipcRenderer = window.ipcRenderer
+		//@ts-expect-error
+		global.dialog = window.dialog;
+		//@ts-expect-error
+		global.shell = window.shell;
+		//@ts-expect-error
+		global.path = window.path;
 
 		global.app = {
 			//@ts-expect-error
@@ -61,11 +69,13 @@
 {#if loaded}
 
 <div id="bg" class="bg">
-	<div id="bg-opacity" class="color"></div>
+	<div id="bg-opacity" class="color" style="transition: none;"></div>
 	<div id="bg-blur" class="filter"></div>
 	<div class="img">
 		<img id="bg-img" src="" alt=""/>
-		<video autoplay muted loop id="bg-video" src="" alt=""></video>
+		<video autoplay muted loop id="bg-video" src="" alt="">
+			<track kind="captions">
+		</video>
 	</div>
 </div>
 
@@ -97,14 +107,13 @@
 <Nav {section_names} bind:section={section} userData={$global.authInterface.logged_user} />
 
 <main>
-	<TextField  />
-	<div class="section-wrapper" class:left={section < SECTIONS.HOME} class:right={section > SECTIONS.HOME}>
+	<div class="section-wrapper custom-scrollbar" class:left={section < SECTIONS.HOME} class:right={section > SECTIONS.HOME}>
 		<Home />
 	</div>
-	<div class="section-wrapper" class:left={section < SECTIONS.SETTINGS} class:right={section > SECTIONS.SETTINGS}>
+	<div class="section-wrapper custom-scrollbar" class:left={section < SECTIONS.SETTINGS} class:right={section > SECTIONS.SETTINGS}>
 		<Settings />
 	</div>
-	<div class="section-wrapper" class:left={section < SECTIONS.ACCOUNT} class:right={section > SECTIONS.ACCOUNT}>
+	<div class="section-wrapper custom-scrollbar" class:left={section < SECTIONS.ACCOUNT} class:right={section > SECTIONS.ACCOUNT}>
 		<Account />
 	</div>
 </main>

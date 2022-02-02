@@ -4,6 +4,8 @@ import type { SettingsInterface } from '../../includes/settings-manager'
 
 import { writable } from 'svelte/store';
 
+import type { IpcRendererEvent, ipcRenderer } from 'electron';
+
 function capitalizeFirstLetter(string: string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -11,10 +13,17 @@ function capitalizeFirstLetter(string: string) {
 function createGlobal() {
 	const { subscribe, set, update } = writable({
         theme: 'light',
-        modpack: 'fabrica',
-        authInterface: undefined as AuthInterface,
-        modpackManager: undefined as ModpackManager,
-        settingsManager: undefined as SettingsInterface,
+        authInterface: undefined as unknown as AuthInterface,
+        modpackManager: undefined as unknown as ModpackManager,
+        settingsManager: undefined as unknown as SettingsInterface,
+        ipcRenderer: {
+            send: undefined as unknown as typeof ipcRenderer.send,
+            sendSync: undefined as unknown as typeof ipcRenderer.sendSync,
+            on: undefined as unknown as typeof ipcRenderer.on,
+            once: undefined as unknown as typeof ipcRenderer.once,
+            removeAllListeners: undefined as unknown as typeof ipcRenderer.removeAllListeners,
+        },
+        state: 'idle' as 'idle' | 'download',
     });
 
     let obj = {
@@ -22,9 +31,22 @@ function createGlobal() {
         set,
         update,
         capitalizeFirstLetter,
+        LOADING_SPAN: '<span class="loading"><p>.</p><p>.</p><p>.</p></span>',
+        shell: {
+            showItemInFolder: async (path: string) => {},
+            openPath: async (path: string) => {},
+            openExternal: async (url: string) => {}
+        },
         app: {
             version: 'undetected',
             os: undefined as any,
+        },
+        dialog: {
+            showOpenDialog: async (options: any): Promise<any> => {}
+        },
+        path: {
+            normalize: (p: string): string => {return ''},
+            join: (...paths: string[]): string => {return ''},
         },
         overlay: {
             show: (title?: string, p?: string, _loading=false) => {console.warn('overlay not ready')},

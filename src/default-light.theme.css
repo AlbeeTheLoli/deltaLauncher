@@ -61,14 +61,14 @@
 
 /* 
     EVERYTHING BELOW IS OPTIONAL
-    these parameters could be left out, or rewritten for additional controll
+    these parameters could be left out, or rewritten for additional control
 */
 
 :root { 
 
     /* app */
 
-    --app-bg: var(--bg-primary);
+    --app-bg: var(--bg-secondary-alt);
     --app-text: var(--text-primary);
     --app-icon-clr: var(--text-primary);
 
@@ -151,6 +151,26 @@
     --dropmenu-sub-p-hover: var(--bg-secondary);
     --dropmenu-toggle-bg-hover: var(--dropmenu-main-bg-hover);
     --dropmenu-toggle-fill-hover: var(--dropmenu-main-h1-hover);
+
+    --playmenu-main-bg: var(--clr-primary);
+    --playmenu-main-h1: var(--bg-primary);
+    --playmenu-main-p: var(--bg-secondary);
+    --playmenu-sub-even-bg: var(--clr-primary);
+    --playmenu-sub-odd-bg: var(--clr-secondary);
+    --playmenu-sub-h1: var(--bg-primary);
+    --playmenu-sub-p: var(--bg-secondary);
+    --playmenu-toggle-bg: var(--playmenu-main-bg);
+    --playmenu-toggle-fill: var(--playmenu-main-h1);
+
+    --playmenu-main-bg-hover: var(--clr-tertiary);
+    --playmenu-main-h1-hover: var(--bg-primary);
+    --playmenu-main-p-hover: var(--bg-secondary);
+    --playmenu-sub-even-bg-hover: var(--clr-tertiary);
+    --playmenu-sub-odd-bg-hover: var(--clr-tertiary);
+    --playmenu-sub-h1-hover: var(--bg-primary);
+    --playmenu-sub-p-hover: var(--bg-secondary);
+    --playmenu-toggle-bg-hover: var(--playmenu-main-bg-hover);
+    --playmenu-toggle-fill-hover: var(--playmenu-main-h1-hover);
 
     --dropmenu-main-h1-fs: 16px;
     --dropmenu-main-p-fs: 13px;

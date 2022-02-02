@@ -41,7 +41,7 @@
     <div class="flex-filler drag"></div>
     <div class="profile">
         <div class="profile-picture">
-            <img id="profile-picture-img" src="D:/Pictures/Anime/Kyoko Kirigiri/5a43c6be6cbe4edcaf08fa24bfee02a7.jpg" alt="">
+            <img id="profile-picture-img" src="D:/Pictures/Anime/Helltaker/0f0f99c00bdc40b5cc21f621bd4d8ac5.jpg" alt="">
         </div>
         <div class="profile-info">
             <h1 id="profile-login-el">{userData.login}</h1>

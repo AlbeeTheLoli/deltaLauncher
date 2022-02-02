@@ -23,13 +23,16 @@
         })
     }
 
-    let downloading = false;
+    $: downloading = $global.state == 'download';
     let soft_downloading = false;
+    let download_progress = 0;
 
-    let servers_menus = [
-        {
-            id: 'magicae',
-            h1: 'Magicae',
+    let servers_menus = [];
+
+    for (const mdpck in $global.modpackManager.modpacks) {
+        servers_menus.push({
+            id: mdpck,
+            h1: global.capitalizeFirstLetter(mdpck),
             p: 'Разработчик',
             toggle: false,
             status: {
@@ -37,57 +40,12 @@
                 players: -1
             },
             onclick: () => {
-                console.log('selected magicae!');
+                console.log(`selected ${mdpck}!`);
 
-                $global.modpackManager.modpack = 'magicae';
+                $global.modpackManager.modpack = mdpck;
             }
-        },
-        {
-            id: 'fabrica',
-            h1: 'Fabrica',
-            p: 'Разработчик',
-            toggle: false,
-            status: {
-                online: false,
-                players: -1
-            },
-            onclick: () => {
-                console.log('selected fabrica!');
-                
-                $global.modpackManager.modpack = 'fabrica';
-            }
-        },
-        {
-            id: 'statera',
-            h1: 'Statera',
-            p: 'Разработчик',
-            toggle: false,
-            status: {
-                online: false,
-                players: -1
-            },
-            onclick: () => {
-                console.log('selected statera!');
-
-                $global.modpackManager.modpack = 'statera';
-            }
-        },
-        {
-            id: 'insula',
-            h1: 'Insula',
-            p: 'Разработчик',
-            toggle: false,
-            status: {
-                online: false,
-                players: -1
-            },
-            onclick: () => {
-                console.log('selected insula!');
-
-                $global.modpackManager.modpack = 'insula';
-            }
-        },
-    ]
+        })
+    }
 
     function getServerStatuses() {
         for (const status of servers_menus) {
@@ -97,27 +55,113 @@
             }
         }
     }
+
+    let h1 = 'Тут что то будет...';
+    let p = 'Наверное....';
+    let downloading_item = '';
+
+    $global.ipcRenderer.on('download-started', (event, item) => {
+        console.log('STARTED');
+        last_received_bytes = 0;
+
+        downloading_item = item;
+        if (downloading_item == 'libs') {
+            h1 = `Подготовка к загрузке библиотек.`;
+        } else {
+            h1 = `Подготовка к загрузке: ${global.capitalizeFirstLetter($global.modpackManager.modpack)}.`;
+        }
+        p = `Ожидание ответа сервера...`;
+        
+        $global.state = 'download';
+    })
+
+    let last_received_bytes = 0;
+    $global.ipcRenderer.on('download-progress', (event, progress) => {
+        console.log('PROGRESS', progress);
+        let speed = (progress.received_size - last_received_bytes) / 1024 / 1024;
+        last_received_bytes = progress.received_size;
+        
+        download_progress = progress.percent;
+
+        if (downloading_item == 'libs') {
+            h1 = `Скачивание библиотек...`;
+        } else {
+            h1 = `Скачивание сборки: ${global.capitalizeFirstLetter($global.modpackManager.modpack)}...`;
+        }
+        p = `Скорость: ${speed.toPrecision(2)} Мб в секунду`;
+
+        $global.state = 'download';
+    })
+
+    $global.ipcRenderer.on('download-finished', () => {
+        console.log('FINISHED');
+
+        h1 = `Распаковка файлов...`;
+        p = 'Это может занять некторое время.';
+
+        $global.state = 'download';
+    })
+
+    $global.ipcRenderer.on('download-cancelled', () => {
+        console.log('CANCELLED');
+
+        h1 = 'Тут что то будет...';
+        p = 'Наверное....';
+        
+        $global.state = 'idle';
+    })
+
+    $global.ipcRenderer.on('modpack-downloaded', () => {
+        console.log('DOWNLOADED');
+        
+        h1 = 'Завершение...';
+        p = 'Это может занять некторое время.';
+
+        $global.state = 'download';
+    })
+
+    $global.ipcRenderer.on('moving-libs-start', async (event) => {
+        h1 = `Перенос библиотек...`;
+        p = 'Это может занять некторое время.';
+
+        $global.state = 'download';
+    })
+
+    $global.ipcRenderer.on('moving-libs-progress', async (event, progress) => {
+        h1 = `Перенос библиотек: ${(progress.percent).toFixed(1)}%`;
+        p = 'Это может занять некторое время.';
+        download_progress = progress.percent / 100;
+
+        $global.state = 'download';
+    });
+
+    $global.ipcRenderer.on('moving-libs-finished', () => {
+        h1 = 'Тут что то будет...';
+        p = 'Наверное...';
+
+        $global.state = 'idle';
+    });
 </script>
 
 <footer class:download={downloading} class:soft-download={soft_downloading} >
-    <DropMenu {downloading} h1={global.capitalizeFirstLetter($global.modpackManager.modpack)} p={'Разработчик'} menus={servers_menus.filter((el) => {return el.id != $global.modpackManager.modpack})} />
-    <div id="footer-bar" class="footer-bar" on:click={() => downloading = !downloading}>
+    <DropMenu bind:locked={downloading} h1={global.capitalizeFirstLetter($global.modpackManager.modpack)} p={'Разработчик'} menus={servers_menus.filter((el) => {return el.id != $global.modpackManager.modpack})} />
+    <div id="footer-bar" class="footer-bar">
         <div class="progress-bar">
             <div class="progress-bg">
                 <div class="top"></div>
                 <div class="bottom"></div>
             </div>
-            <div class="filler" style="width: 50%;">
+            <div class="filler" style="width: {download_progress * 100}%;">
                 <div class="top"></div>
                 <div class="bottom"></div>
             </div>
         </div>
         <div class="info">
-            <h1>Тут что то будет</h1>
-            <p>наверное....</p>
+            <h1>{h1}</h1>
+            <p>{p}</p>
         </div>
     </div>
-    <MainButton {downloading} />
+    <MainButton />
 </footer>
 
 <style>

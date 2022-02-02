@@ -2,7 +2,6 @@
     export let onclick = () => {};
     export let menus: {toggle: boolean, checked?: boolean, h1: string, onclick?: (checked?: boolean) => void, p?: string, onchange?: (checked?: boolean) => void}[] = []
     export let strict = false;
-    export let downloading: boolean = false;
 
     export let h1 = '';
     export let p = '';
@@ -27,11 +26,11 @@
     }
 </script>
 
-<div class:show-sub={show_sub} class:download={downloading} class:locked={locked} class="dropmenu-container" on:mouseleave={() => show_sub = false}>
+<div class:show-sub={show_sub} class:locked={locked} class="dropmenu-container noselect" on:mouseleave={() => show_sub = false}>
     {#each menus as btn, i}
         {#if btn.toggle}
             <div style="--order: {i}" class="sub-menu toggle">
-                <div class="info" on:click={() => {if (btn.onclick) btn.onclick()}}>
+                <div class="info" on:click={() => {if (btn.onclick && !locked) btn.onclick()}}>
                     <h1>{btn.h1}</h1>
                 </div>
                 <div data-state={btn.checked.toString()} class="toggle noselect" use:toggle={btn}>
@@ -40,7 +39,7 @@
             </div>
         {:else}
             <div style="--order: {i}" class="sub-menu">
-                <div class="info" on:click={() => {if (btn.onclick) btn.onclick()}}>
+                <div class="info" on:click={() => {if (btn.onclick&& !locked) btn.onclick()}}>
                     <h1>{btn.h1}</h1>
                     {#if btn.p} <p>{btn.p}</p> {/if}
                 </div>
@@ -48,7 +47,7 @@
         {/if}
     {/each}
     <div class="main-menu">
-        <div on:mouseenter={() => show_sub = !strict} id="main-menu" class="info" on:click={() => onclick()}>
+        <div on:mouseenter={() => show_sub = !strict} id="main-menu" class="info" on:click={() => {if (!locked) onclick()}}>
             <h1>{h1}</h1>
             <p>{p}</p>
         </div>
@@ -66,10 +65,6 @@
         height: 100%;
         position: relative;
         opacity: 1;
-    }
-
-    .dropmenu-container.download {
-        pointer-events: none;
     }
 
     .dropmenu-container:not(.locked) {
@@ -108,7 +103,7 @@
         justify-content: center;
         padding: 0 32px;
 
-        transition: background .16s cubic-bezier(0.165, 0.84, 0.44, 1);
+        /* transition: background .16s cubic-bezier(0.165, 0.84, 0.44, 1); */
     }
 
     .dropmenu-container:not(.locked) .main-menu > .info:hover {
@@ -138,7 +133,7 @@
         justify-content: center;
         cursor: pointer;
 
-        transition: all .16s cubic-bezier(0.165, 0.84, 0.44, 1);
+        /* transition: all .16s cubic-bezier(0.165, 0.84, 0.44, 1); */
     }
 
     .open-sub-menu.active {
@@ -196,7 +191,7 @@
         justify-content: center;
         padding: 0 32px;
 
-        transition: background-color .16s cubic-bezier(0.165, 0.84, 0.44, 1);
+        /* transition: background-color .16s cubic-bezier(0.165, 0.84, 0.44, 1); */
     }
 
     .sub-menu > .info > h1 {

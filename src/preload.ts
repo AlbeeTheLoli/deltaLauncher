@@ -71,13 +71,16 @@ window.ipcRenderer = {
 
 //@ts-expect-error
 window.shell = {
-    showItemInFolder: async (path: string) => {        
+    showItemInFolder: async (path: string) => {
+        console.log('showing file: =', path);
         await shell.showItemInFolder(path);
     },
     openPath: async (path: string) => {
+        console.log('opening file: =', path);
         await shell.openPath(path);
     },
     openExternal: async (url: string) => {
+        console.log('opening url: =', url);
         await shell.openExternal(url);
     }
 }
@@ -155,7 +158,8 @@ window.onload = async () => {
     console.log('loading... <<<');
 
     if (settingsInterface.settings.dev_mode) document.body.classList.add('dev');
-    (document.getElementById('bg-video') as HTMLVideoElement).muted = settingsInterface.settings.appearance.muted;
+    (document.getElementById('bg-video') as HTMLVideoElement).volume = settingsInterface.settings.appearance.bg_volume / 100;
+    (document.getElementById('bg-video') as HTMLVideoElement).muted = false;
     
     document.getElementById('app-exit')?.addEventListener('click', () => {
         console.log('exiting');
@@ -169,25 +173,27 @@ window.onload = async () => {
         window.browserWindow.minimize();
     });
 
-    document.getElementById('app-reload')?.addEventListener('click', () => {
+    document.getElementById('app-reload')?.addEventListener('click', async () => {
         settingsInterface.saveSync();
         console.log('reloading');
-        //@ts-expect-error
-        window.browserWindow.reload();
+
         //@ts-expect-error
         window.modpackManager.downloader.cancel();
+        //@ts-expect-error
+        window.browserWindow.reload();
     });
 
-    window.onbeforeunload = () => {
+    //@ts-expect-error
+    window.canreload = true;
+
+    window.addEventListener('beforeunload', (ev) => {
         console.log('unloading... <<<');
+
         //@ts-expect-error
         window.modpackManager.downloader.cancel();
 
         console.log('byee~~ sussy baka~ :)');
-    }
-
-    //@ts-expect-error
-    window.browserWindow.show();
+    });
 
     console.log('load done <<<');
 }

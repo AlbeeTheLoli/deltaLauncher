@@ -32,34 +32,7 @@ enum GRAPHICS_LEVELS {
     ULTRA // _ULTRA
 }
 
-interface IModpackInfo {
-    libs_version: string,
-    link: string,
-    ip: string,
-}
-
-export const MODPACK_INFO: {[key: string]: IModpackInfo} = {
-    'magicae': {
-        link: '',
-        libs_version: '1.12',
-        ip: '',
-    },
-    'fabrica': {
-        link: '',
-        libs_version: '1.12',
-        ip: '',
-    },
-    'statera': {
-        link: '',
-        libs_version: '1.12',
-        ip: '',
-    },
-    'insula': {
-        link: '',
-        libs_version: '1.12',
-        ip: '',
-    },
-}
+import { MODPACK_INFO, IModpackInfo } from './modpack.info';
 
 export class ModpackManager {
     private _graphics_level = GRAPHICS_LEVELS.DEFAULT;
@@ -70,7 +43,7 @@ export class ModpackManager {
     private _settingsStorage: SettingsStorage;
     private log_location = log.transports.file.getFile().path.split('\\main.log')[0];
 
-    private _selected_modpack = 'magicae';
+    private _selected_modpack = Object.keys(MODPACK_INFO)[0];
     public set modpack(to: any) {
         this._selected_modpack = to;
         this._settingsStorage.settings.on_modpack = to;
@@ -97,39 +70,24 @@ export class ModpackManager {
     }
 
     public updateModpackDirs() {
-        this._modpacks = {
-            magicae: {
-                path: path.normalize(path.join(this._settingsStorage.settings.modpacks.magicae.path.replace(/%ROOT%/g, this._root), 'magicae')),
-                version: 1.0,
-                installed: false,
-                ...MODPACK_INFO['magicae'],
-            },
-            fabrica: {
-                path: path.normalize(path.join(this._settingsStorage.settings.modpacks.fabrica.path.replace(/%ROOT%/g, this._root), 'fabrica')),
-                version: 1.0,
-                installed: true,
-                ...MODPACK_INFO['fabrica'],
-            },
-            statera: {
-                path: path.normalize(path.join(this._settingsStorage.settings.modpacks.statera.path.replace(/%ROOT%/g, this._root), 'statera')),
-                version: 1.0,
-                installed: false,
-                ...MODPACK_INFO['statera'],
-            },
-            insula: {
-                path: path.normalize(path.join(this._settingsStorage.settings.modpacks.insula.path.replace(/%ROOT%/g, this._root), 'insula')),
-                version: 1.0,
-                installed: false,
-                ...MODPACK_INFO['insula'],
-            },
-        };
+        this._modpacks = {};
+
+        for (const mdpck in MODPACK_INFO) {
+            this._modpacks = {
+                ...this._modpacks,
+                [mdpck]: {
+                    //@ts-expect-error
+                    path: path.normalize(path.join(this._settingsStorage.settings.modpacks[mdpck].path.replace(/%ROOT%/g, this._root), mdpck)),
+                    version: 1.0,
+                    installed: false,
+                    ...MODPACK_INFO[mdpck],
+                },
+            }
+
+            this._modpacks[mdpck].installed = this.modpackInstalledSync(mdpck);
+        }
 
         this.ensureModpackDirs();
-
-        this._modpacks.magicae.installed = this.modpackInstalledSync('magicae');
-        this._modpacks.fabrica.installed = this.modpackInstalledSync('fabrica');
-        this._modpacks.statera.installed = this.modpackInstalledSync('statera');
-        this._modpacks.insula.installed = this.modpackInstalledSync('insula');
     }
 
     public updateLibsDirs() {
@@ -307,7 +265,7 @@ export class ModpackManager {
                 }
             }).catch(err => { log.error(err) })
         }).then(res => {
-            return `https://github.com/Ektadelta/Encore/releases/download/${res}/Libraries-${res}.zip`
+            return `https://github.com/Ektadelta/Encore/releases/download/${res}/Encore-${res}.zip`
         })
     }
 
@@ -423,6 +381,7 @@ export class ModpackManager {
             )
             if (downloaded_path == '') {
                 log.info(`[MODPACK] <${modpack_name}> download cancelled`);
+                BrowserWindow.getAllWindows()[0]?.webContents.send('download-cancelled'); 
                 return;
             }
         }
@@ -502,6 +461,7 @@ export class ModpackManager {
         BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
             percent: 100
         });
+        BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-finished', modpack_name);
         return;
     }
 
