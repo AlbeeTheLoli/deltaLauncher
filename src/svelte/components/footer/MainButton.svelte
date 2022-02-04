@@ -43,15 +43,27 @@
             click: async () => {
                 let modpack = $global.modpackManager.modpack;
 
-                if ($global.settingsManager.settings.modpack_settings.add_ons.optifine.enabled) {
-                    let optifine_warning = await global.askOverlay.ask('У вас включен Optifine!', {
-                        yes: {body: 'Да, запустить со включенным Optifine', type: 'alt'},
-                        no: {body: 'Нет, выключить Optifine и запустить', type: 'clr'},
-                        cancel: {body: 'Отменить'},
-                    }, 'Несмотря на то, что он включел по умолчанию, мы не советуем играть с ним если вы не пользуетесь шейдерами. Он может вызывать редкие сбои и неправильное отображение объектов. Оставить?')
+                console.log('checking env...');
+                await $global.modpackManager.ensureModpackEnvironment(modpack)
 
-                    if (optifine_warning == 'cancel') {
-                        return;
+                if ($global.settingsManager.settings.modpack_settings.add_ons.all.optifine) {
+                    if ($global.settingsManager.settings.modpack_settings.add_ons.all.optifine.enabled) {
+                        let optifine_warning = await global.askOverlay.ask('У вас включен Optifine!', {
+                            yes: {body: 'Да, запустить со включенным Optifine', type: 'alt'},
+                            no: {body: 'Нет, выключить Optifine и запустить', type: 'clr'},
+                            cancel: {body: 'Отменить'},
+                        }, 'Несмотря на то, что он включел по умолчанию, мы не советуем играть с ним если вы не пользуетесь шейдерами. Он может вызывать редкие сбои и неправильное отображение объектов. Оставить?')
+
+                        switch (optifine_warning) {
+                            default:
+                                return;
+
+                            case 'yes':
+                                break;
+
+                            case 'no':
+                                break;
+                        }
                     }
                 }
 
@@ -98,21 +110,16 @@
                 },
             ],
             click: async () => {
-                console.log('checking libs...');
-                if (!(await $global.modpackManager.libsIntalled('1.12'))) {
-                    console.log('downloading libs:', '1.12');
-                    await $global.modpackManager.downloadLibs($global.modpackManager.modpack);
-                }
+                let l_modpack = $global.modpackManager.modpack; // launching modpack
 
-                console.log('downloading modpack:', $global.modpackManager.modpack);
-                await $global.modpackManager.downloadModpack($global.modpackManager.modpack);
+                console.log('checking env...');
+                await $global.modpackManager.ensureModpackEnvironment(l_modpack)
 
-                if (!(await $global.modpackManager.libsIntalled('1.12'))) {
-                    console.log('downloading libs:', '1.12');
-                    await $global.modpackManager.downloadLibs($global.modpackManager.modpack);
-                } else {
-                    await $global.modpackManager.moveLibs($global.modpackManager.modpack);
-                }
+                console.log('downloading modpack:', l_modpack);
+                await $global.modpackManager.downloadModpack(l_modpack);
+
+                console.log('checking env...');
+                await $global.modpackManager.ensureModpackEnvironment(l_modpack)
             }
         },
 

@@ -11,7 +11,7 @@ log.variables.label = 'settings';
 log.transports.console.format = '{h}:{i}:{s} > [{label}] {text}';
 log.transports.file.format = '{h}:{i}:{s} > [{label}] {text}';
 
-import { MODPACK_INFO, IModpackInfo } from './modpack.info';
+import { MODPACK_INFO, IModpackInfo, ADDONS_INFO } from './modpack.info';
 
 const settings_pattern = {
     dev_mode: true,
@@ -39,8 +39,10 @@ const settings_pattern = {
             shop: { minecraft_key: "key_key.ftbmoney.shop", minecraft_code: 35, key_code: 12, key_name: "H" },
         },
         add_ons: {
-            optifine: { enabled: true},
-            inventory_tweaks: { enabled: false},
+            path: '%ROOT%/addons',
+            all: {
+                
+            } as {[key: string]: {enabled: boolean}},
         },
     },
     appearance: {
@@ -63,6 +65,15 @@ for (const mdpck in MODPACK_INFO) {
         ...settings_pattern.modpacks,
         [mdpck]: {
             path: "%ROOT%/modpacks",
+        },
+    }
+}
+
+for (const addn in ADDONS_INFO.mods) {
+    settings_pattern.modpack_settings.add_ons.all = {
+        ...settings_pattern.modpack_settings.add_ons.all,
+        [addn]: {
+            enabled: ADDONS_INFO.mods[addn].default_enabled,
         },
     }
 }

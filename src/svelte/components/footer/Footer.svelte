@@ -68,7 +68,7 @@
         if (downloading_item == 'libs') {
             h1 = `Подготовка к загрузке библиотек.`;
         } else {
-            h1 = `Подготовка к загрузке: ${global.capitalizeFirstLetter($global.modpackManager.modpack)}.`;
+            h1 = `Подготовка к загрузке: ${global.capitalizeFirstLetter(downloading_item)}.`;
         }
         p = `Ожидание ответа сервера...`;
         
@@ -86,7 +86,7 @@
         if (downloading_item == 'libs') {
             h1 = `Скачивание библиотек...`;
         } else {
-            h1 = `Скачивание сборки: ${global.capitalizeFirstLetter($global.modpackManager.modpack)}...`;
+            h1 = `Скачивание: ${global.capitalizeFirstLetter(downloading_item)}...`;
         }
         p = `Скорость: ${speed.toPrecision(2)} Мб в секунду`;
 
@@ -112,6 +112,7 @@
     })
 
     $global.ipcRenderer.on('modpack-downloaded', () => {
+        downloading_item = '';
         console.log('DOWNLOADED');
         
         h1 = 'Завершение...';

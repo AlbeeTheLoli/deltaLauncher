@@ -62,9 +62,10 @@
         </Setting>
 
         <Setting title='Дополнительные моды'>
-            <Checkbox label="Optifine" bind:checked={$global.settingsManager.settings.modpack_settings.add_ons.optifine.enabled}></Checkbox>
-            <div class="smoll-gap"></div>
-            <Checkbox label="Inventory Tweaks" bind:checked={$global.settingsManager.settings.modpack_settings.add_ons.inventory_tweaks.enabled}></Checkbox>
+            {#each Object.keys($global.settingsManager.settings.modpack_settings.add_ons.all) as addn}
+                <Checkbox label={global.capitalizeFirstLetter(addn)} bind:checked={$global.settingsManager.settings.modpack_settings.add_ons.all[addn].enabled}></Checkbox>
+                <div class="smoll-gap"></div>
+            {/each}
         </Setting>
 
         <Setting title='Директории сборок'>
