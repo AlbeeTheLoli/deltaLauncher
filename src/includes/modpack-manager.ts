@@ -398,7 +398,7 @@ export class ModpackManager {
                     let src = path.join(await this.ensureAddonsDir(), el.filename);
                     let dest = path.join(dir, 'mods', el.filename);
                     if (!(await fs.pathExists(dest))) {
-                        await fs.copyFile(src, dest);
+                        if (await fs.pathExists('')) await fs.copyFile(src, dest);
                     }
                     for (const dependency of el.dependencies) {
                         let dependency_src = path.join(await this.ensureAddonsDir(), addons.dependencies[dependency].filename);
@@ -427,7 +427,7 @@ export class ModpackManager {
 
     public async ensureModpackEnvironment(modpack: string): Promise<boolean> {
         let libs_exist = await this.ensureModpackLibs(modpack);
-        let add_ons_present = await this.ensureAddons(modpack);
+        let add_ons_present = this.modpacks[modpack].installed && await this.ensureAddons(modpack);
 
         BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-finished');
 

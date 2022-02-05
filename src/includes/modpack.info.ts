@@ -37,14 +37,14 @@ export const MODPACK_INFO: {[key: string]: IModpackInfo} = {
 
 export const ADDONS_INFO: { mods: { [key: string]: IAddonInfo }, dependencies: { [key: string]: IAddonInfo } } = {
     mods: {
-        'DynamicSurroundings': {
+        'Dynamic Surroundings': {
             default_enabled: false,
             filename: 'DynamicSurroundings-1.12.2-3.6.2.1.jar',
             link: 'https://github.com/Ektadelta/Addition/raw/main/mods/DynamicSurroundings-1.12.2-3.6.2.1.jar',
             dependencies: [ 'OreLib' ],
             incompatable_modpacks: [ 'statera' ],
         },
-        'MoBends': {
+        'Mo\' Bends': {
             default_enabled: false,
             filename: 'MoBends_1.12.2-1.0.0-beta-20.06.20.jar',
             link: 'https://github.com/Ektadelta/Addition/raw/main/mods/MoBends_1.12.2-1.0.0-beta-20.06.20.jar',
@@ -60,7 +60,7 @@ export const ADDONS_INFO: { mods: { [key: string]: IAddonInfo }, dependencies: {
         },
         'Optifine': {
             default_enabled: true,
-            filename: 'preview_OptiFine_1.12.2_HD_U_G6_pre1.jar',
+            filename: 'optifine.jar',
             link: 'https://github.com/Ektadelta/Addition/raw/main/mods/preview_OptiFine_1.12.2_HD_U_G6_pre1.jar',
             dependencies: [],
             incompatable_modpacks: [ ],
