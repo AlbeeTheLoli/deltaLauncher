@@ -58,6 +58,13 @@ export const ADDONS_INFO: { mods: { [key: string]: IAddonInfo }, dependencies: {
             dependencies: [],
             incompatable_modpacks: [ ],
         },
+        'Optifine': {
+            default_enabled: true,
+            filename: 'preview_OptiFine_1.12.2_HD_U_G6_pre1.jar',
+            link: 'https://github.com/Ektadelta/Addition/raw/main/mods/preview_OptiFine_1.12.2_HD_U_G6_pre1.jar',
+            dependencies: [],
+            incompatable_modpacks: [ ],
+        },
     },
     dependencies: {
         'OreLib': {

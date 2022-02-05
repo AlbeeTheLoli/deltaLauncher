@@ -62,8 +62,8 @@
         </Setting>
 
         <Setting title='Дополнительные моды'>
-            {#each Object.keys($global.settingsManager.settings.modpack_settings.add_ons.all) as addn}
-                <Checkbox label={global.capitalizeFirstLetter(addn)} bind:checked={$global.settingsManager.settings.modpack_settings.add_ons.all[addn].enabled}></Checkbox>
+            {#each Object.keys($global.modpackManager.addons.preferences) as addn}
+                <Checkbox label={global.capitalizeFirstLetter(addn)} bind:checked={$global.modpackManager.addons.preferences[addn].enabled}></Checkbox>
                 <div class="smoll-gap"></div>
             {/each}
         </Setting>

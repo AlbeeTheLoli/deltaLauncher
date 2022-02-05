@@ -46,8 +46,8 @@
                 console.log('checking env...');
                 await $global.modpackManager.ensureModpackEnvironment(modpack)
 
-                if ($global.settingsManager.settings.modpack_settings.add_ons.all.optifine) {
-                    if ($global.settingsManager.settings.modpack_settings.add_ons.all.optifine.enabled) {
+                if ($global.modpackManager.addons.preferences.optifine) {
+                    if ($global.modpackManager.addons.preferences.optifine.enabled) {
                         let optifine_warning = await global.askOverlay.ask('У вас включен Optifine!', {
                             yes: {body: 'Да, запустить со включенным Optifine', type: 'alt'},
                             no: {body: 'Нет, выключить Optifine и запустить', type: 'clr'},
@@ -59,9 +59,11 @@
                                 return;
 
                             case 'yes':
+                                $global.modpackManager.addons.preferences['optifine'].enabled = true
                                 break;
 
                             case 'no':
+                                $global.modpackManager.addons.preferences['optifine'].enabled = false
                                 break;
                         }
                     }
