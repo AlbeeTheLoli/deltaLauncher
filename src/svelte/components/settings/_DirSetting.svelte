@@ -5,12 +5,22 @@
     import Scrollable from "../Scrollable.svelte";
     // import Button from '../../components/Button.svelte';
 
+    export let mdpck: string;
     export let display_name: string;
     export let path: string;
+
+    let onchange = (val: string) => {
+        $global.settingsManager.settings.modpacks[mdpck].path = val;
+        $global.modpackManager.updateModpackDirs();
+    };
+    if (mdpck == 'libs') {
+        onchange = (val: string) => {$global.settingsManager.settings.modpacks.libs.path = val;
+            $global.modpackManager.updateLibsDirs();}
+    }
 </script>
 
 <div class="k-v-pair">
-    <p class="k">{display_name}:</p> <p class="v"><Scrollable horizontal><SelectFile options={{ title: "Выберите папку", properties: ['openDirectory'] }} bind:pth={path}></SelectFile></Scrollable></p> <div class="flex-filler"></div> <p class="b">Сбросить</p>
+    <p class="k">{display_name}:</p> <p class="v"><Scrollable horizontal><SelectFile {onchange} options={{ title: "Выберите папку", properties: ['openDirectory'] }} bind:pth={path}></SelectFile></Scrollable></p> <div class="flex-filler"></div> <p class="b">Сбросить</p>
 </div>
 
 <style>

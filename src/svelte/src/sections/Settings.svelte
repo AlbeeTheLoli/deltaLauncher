@@ -69,9 +69,9 @@
         </Setting>
 
         <Setting title='Директории сборок'>
-            <DirSetting display_name='Библиотеки' bind:path={$global.settingsManager.settings.modpacks.libs.path}></DirSetting>
+            <DirSetting display_name='Библиотеки' mdpck='libs' bind:path={$global.modpackManager.libs.path}></DirSetting>
             {#each Object.keys($global.modpackManager.modpacks) as mdpck}
-                <DirSetting display_name={global.capitalizeFirstLetter(mdpck)} bind:path={$global.settingsManager.settings.modpacks[mdpck].path}></DirSetting>
+                <DirSetting display_name={global.capitalizeFirstLetter(mdpck)} {mdpck} bind:path={$global.modpackManager.modpacks[mdpck].path}></DirSetting>
             {/each}
         </Setting>
 

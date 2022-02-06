@@ -73,6 +73,10 @@ input {
     -webkit-app-region: drag;
 }
 
+.no-drag {
+    -webkit-app-region: no-drag;
+}
+
 .app-frame {
     z-index: 100000;
     position: absolute;

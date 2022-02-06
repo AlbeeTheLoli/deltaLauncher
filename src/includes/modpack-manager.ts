@@ -35,6 +35,7 @@ enum GRAPHICS_LEVELS {
 import { MODPACK_INFO, ADDONS_INFO, IAddonInfo } from './modpack.info';
 
 export class ModpackManager {
+    private __fs: undefined | typeof fs = undefined;
     private _graphics_level = GRAPHICS_LEVELS.DEFAULT;
     private _root = '';
     private _modpacks: any;
@@ -68,6 +69,10 @@ export class ModpackManager {
         this.ensureAddonsDir();
 
         this.downloader = new Downloader();
+
+        if (this._settingsStorage.settings.dev_mode) {
+            this.__fs = fs;
+        }
     }
 
     public updateModpackDirs(): void {
@@ -78,7 +83,7 @@ export class ModpackManager {
                 ...this._modpacks,
                 [mdpck]: {
                     //@ts-expect-error
-                    path: path.normalize(path.join(this._settingsStorage.settings.modpacks[mdpck].path.replace(/%ROOT%/g, this._root), mdpck)),
+                    path: path.normalize(path.join(this._settingsStorage.settings.modpacks[mdpck].path.replace(/%ROOT%/g, this._root))),
                     version: 1.0,
                     installed: false,
                     ...MODPACK_INFO[mdpck],
@@ -139,7 +144,13 @@ export class ModpackManager {
             ...ADDONS_INFO,
         }
     }
-    public set addons(_: any) { }
+    public set addons(_: {
+        path: string,
+        preferences: {[key: string]: {enabled: boolean}},
+        mods: typeof ADDONS_INFO.mods,
+        dependencies: typeof ADDONS_INFO.mods,
+
+    }) { }
 
     public get modpacks() { return this._modpacks; }
     public set modpacks(_: any) { }
@@ -426,6 +437,7 @@ export class ModpackManager {
 
 
     public async ensureModpackEnvironment(modpack: string): Promise<boolean> {
+        let dir = await this.ensureModpackDir(modpack);
         let libs_exist = await this.ensureModpackLibs(modpack);
         let add_ons_present = this.modpacks[modpack].installed && await this.ensureAddons(modpack);
 
@@ -482,15 +494,9 @@ export class ModpackManager {
     }
 
     public async downloadModpack(modpack_name: string, force_download = false): Promise<boolean> {
-
-        if (await this.libsIntalled('1.12')) {
-            log.info('[MODPACK] libs are installed')
-        } else {
-            log.info('[MODPACK] libs are not installed')
-            await this.downloadLibs(modpack_name);
-            log.info('[MODPACK] libs installed');
-        }
-
+        if (this.modpacks[modpack_name].installed) return true;
+        this.ensureModpackEnvironment(modpack_name);
+        
         let folder = await this.ensureModpackDir(modpack_name);
         await this.clearModpackDir(modpack_name);
         if (await fs.pathExists(path.join(folder, 'modpack.zip')) && !force_download) {
@@ -520,21 +526,36 @@ export class ModpackManager {
         BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished', modpack_name);
         await this.unzipModpack(folder, modpack_name);
         BrowserWindow.getAllWindows()[0]?.webContents.send('unzipping-finished');
-        if (await fs.pathExists(path.join(folder, 'modpack.zip'))) await fs.unlink(path.join(folder, 'modpack.zip'));
 
         // BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-start');
         // await this.moveLibs(modpack_name);
+        this.modpacks[modpack_name].installed = true;
         BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-downloaded', modpack_name);
 
         return true;
     }
 
+    public async clearModpackArchive(modpack_name: string): Promise<boolean> {
+        let fldr = path.join(await this.ensureModpackDir(modpack_name), 'modpack.zip');
+        if (await fs.pathExists(fldr)) fs.access(fldr, fs.constants.W_OK, async (err) => {
+            if (err) {
+                log.error(err);
+                return false;
+            }
+            
+            await fs.unlink(fldr);
+            return true;
+        }) 
+        return false;
+    }
+
     public async unzipModpack(folder: string, modpack_name: string): Promise<boolean> {
         log.info(`[MODPACK] <${modpack_name}> unzipping...`);
         try {
-            await extract(path.join(folder, 'modpack.zip'), { dir: folder })
+            let fldr = path.join(folder, 'modpack.zip');
+            await extract(fldr, { dir: folder })
             log.info('[MODPACK] success');
-            return true;
+            return await this.clearModpackArchive(modpack_name);
         } catch (err) {
             log.error('Error occured while unpacking modpack...');
             return false;

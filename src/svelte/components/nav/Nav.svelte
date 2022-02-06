@@ -33,19 +33,19 @@
 </script>
 
 <header>
-    <div id="header-nav" class="nav noselect">
+    <div id="header-nav" class="nav noselect no-drag">
         {#each section_names as _, i}
-            <div class="nav-element" class:active={section == i} on:click={() => section = i}>{section_names[i]}</div>
+            <div class="nav-element no-drag" class:active={section == i} on:click={() => section = i}>{section_names[i]}</div>
         {/each}
     </div>
     <div class="flex-filler drag"></div>
     <div class="profile">
         <div class="profile-picture">
-            <img id="profile-picture-img" src="D:/Pictures/Anime/Helltaker/0f0f99c00bdc40b5cc21f621bd4d8ac5.jpg" alt="">
+            <img id="profile-picture-img" class="no-drag" src="D:/Pictures/Anime/Helltaker/0f0f99c00bdc40b5cc21f621bd4d8ac5.jpg" alt="">
         </div>
         <div class="profile-info">
             <h1 id="profile-login-el">{userData.login}</h1>
-            <p id="change-account" class="noselect" on:click={change_user}>Сменить аккаунт</p>
+            <p id="change-account" class="noselect no-drag" on:click={change_user}>Сменить аккаунт</p>
         </div>
     </div>
 </header>
@@ -101,7 +101,6 @@
         justify-content: flex-start;
         position: relative;
         height: 100%;
-        padding-left: 32px;
         width: var(--sidebar-width);
     }
 

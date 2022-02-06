@@ -13,7 +13,7 @@
     let locked = false;
     $: _locked = ((max_ram < 6) || (max_ram - 6) < 0) ? (true) : ((states[btn_state].locked) ? true : locked);
     let paused = false;
-    $: btn_state = $global.state == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpackInstalledSync($global.modpackManager.modpack) ? ((Object.keys($global.modpackManager.launched_modpacks).includes($global.modpackManager.modpack)) ? 'launched' : 'play') : 'download');
+    $: btn_state = $global.state == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ((Object.keys($global.modpackManager.launched_modpacks).includes($global.modpackManager.modpack)) ? 'launched' : 'play') : 'download');
     $: states = {
         'play': {
             h1: 'Играть',
@@ -27,7 +27,7 @@
                         console.log('Deintalling', $global.modpackManager.modpack)
                         await $global.modpackManager.clearModpackDir($global.modpackManager.modpack);
                         await $global.modpackManager.updateModpackDirs();
-                        $global.settingsManager.settings.modpacks[$global.modpackManager.modpack].installed = false;
+                        $global.modpackManager.modpacks[$global.modpackManager.modpack].installed = false;
                     }
                 },
                 {

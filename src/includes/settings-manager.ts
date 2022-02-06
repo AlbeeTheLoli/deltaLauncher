@@ -55,7 +55,7 @@ const settings_pattern = {
     },
     modpacks: {
         libs: {
-            path: "%ROOT%/libs",
+            path: path.join("%ROOT%", "libs"),
         },
     },
 };
@@ -64,7 +64,7 @@ for (const mdpck in MODPACK_INFO) {
     settings_pattern.modpacks = {
         ...settings_pattern.modpacks,
         [mdpck]: {
-            path: "%ROOT%/modpacks",
+            path: path.join("%ROOT%", "modpacks", mdpck),
         },
     }
 }
