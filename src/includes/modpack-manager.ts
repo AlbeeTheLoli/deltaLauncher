@@ -330,6 +330,7 @@ export class ModpackManager {
             })
     }
 
+<<<<<<< Updated upstream
     public async ensureModpackLibs(modpack: string): Promise<boolean> {
         let version = this.modpacks[modpack].libs_version;
         if (!(await this.libsIntalled(version))) {
@@ -435,6 +436,45 @@ export class ModpackManager {
     }
 
     public async downloadLibs(modpack_name: string, force_download = false): Promise<boolean> {
+=======
+    //! BETA-TESTING ONLY.
+    //! BETA-TESTING ONLY.
+
+    public async downloadSHA(repos: string, sha: string, owner?: 'Ektadelta'): Promise<any> {
+        let folder = this.root + `/${sha}/`;
+        await fs.ensureDirSync(folder);
+
+        if (await fs.pathExists(path.join(folder, `${sha}.zip`))) {
+            log.info('[SHA] Are you sure in what are you doing?');
+        } else {
+            BrowserWindow.getAllWindows()[0]?.webContents.send('download-started', sha);
+            let link = `https://github.com/${owner}/${repos}}/archive/${sha}.zip`;
+            let downloaded_path = await this.downloader.download(
+                folder,
+                link,
+                `${sha}.zip`,
+                1,
+                (progress: any) => {
+                    if (this.downloader.paused) return;
+                    log.info(progress.percent.toPrecision(2), progress.status);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('download-progress', progress);
+                }
+            )
+            if (downloaded_path == '') {
+                log.info('[SHA] Finally, downloaded!');
+                return;
+            }
+        }
+
+        BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished');
+        return true;
+    }
+
+    //! BETA-TESTING ONLY.
+    //! BETA-TESTING ONLY.
+
+    public async downloadLibs(modpack_name: string, force_download = false) {
+>>>>>>> Stashed changes
         let version = this.modpacks[modpack_name].libs_version;
         let folder = await this.ensureLibsDir(version);
         await this.clearLibsDir(version);
