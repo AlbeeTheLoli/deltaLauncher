@@ -21,7 +21,7 @@ const settings_pattern = {
     auto_go_to_server_thing: false,
     version: "",
     modpack_settings: {
-        allocated_memory: 4,
+        allocated_memory: 8,
         optimization_level: 2,
         java_parameters: "",
         use_builtin_java: true,

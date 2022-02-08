@@ -3,9 +3,7 @@
 
 # custom
 *.zip
-java/
 build/
-src/res/java/
 
 ### Linux ###
 *~

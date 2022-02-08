@@ -549,17 +549,24 @@ export class ModpackManager {
         return false;
     }
 
-    public async unzipModpack(folder: string, modpack_name: string): Promise<boolean> {
+    public unzipModpack(folder: string, modpack_name: string): Promise<boolean> {
         log.info(`[MODPACK] <${modpack_name}> unzipping...`);
-        try {
-            let fldr = path.join(folder, 'modpack.zip');
-            await extract(fldr, { dir: folder })
-            log.info('[MODPACK] success');
-            return await this.clearModpackArchive(modpack_name);
-        } catch (err) {
-            log.error('Error occured while unpacking modpack...');
-            return false;
-        }
+        return new Promise(async (resolve, reject) => {
+            try {
+                let fldr = path.join(folder, 'modpack.zip');
+                await extract(fldr, { dir: folder });
+                let interval = setInterval(async () => {
+                    try {
+                        await this.clearModpackArchive(modpack_name);
+                        clearInterval(interval);
+                        resolve(true);
+                    } catch (err) { }
+                }, 1000)
+            } catch (err) {
+                log.error('Error occured while unpacking modpack...');
+                reject(err);
+            }
+        })
     }
 
     public async moveLibs(modpack_name: string): Promise<boolean> {
