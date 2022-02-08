@@ -446,7 +446,6 @@ export class ModpackManager {
         return libs_exist && add_ons_present; // Everything is fine
     }
 
-    public async downloadLibs(modpack_name: string, force_download = false): Promise<boolean> {
     //! BETA-TESTING ONLY.
     //! BETA-TESTING ONLY.
 
@@ -483,7 +482,7 @@ export class ModpackManager {
     //! BETA-TESTING ONLY.
     //! BETA-TESTING ONLY.
 
-    public async downloadLibs(modpack_name: string, force_download = false) {
+    public async downloadLibs(modpack_name: string, force_download = false): Promise<boolean> {
         let version = this.modpacks[modpack_name].libs_version;
         let folder = await this.ensureLibsDir(version);
         await this.clearLibsDir(version);
