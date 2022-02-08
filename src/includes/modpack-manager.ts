@@ -49,7 +49,7 @@ export class ModpackManager {
         this._selected_modpack = to;
         this._settingsStorage.settings.on_modpack = to;
     }
-    
+
     public get modpack() {
         return this._selected_modpack;
     }
@@ -131,22 +131,22 @@ export class ModpackManager {
 
     public get addons(): {
         path: string,
-        preferences: {[key: string]: {enabled: boolean}},
+        preferences: { [key: string]: { enabled: boolean } },
         mods: typeof ADDONS_INFO.mods,
         dependencies: typeof ADDONS_INFO.mods,
 
-    } { 
+    } {
         return {
             path: this._settingsStorage.settings.modpack_settings.add_ons.path.replace(/%ROOT%/g, this.root),
             preferences: {
                 ...this._settingsStorage.settings.modpack_settings.add_ons.all,
-            } as {[key: string]: {enabled: boolean}},
+            } as { [key: string]: { enabled: boolean } },
             ...ADDONS_INFO,
         }
     }
     public set addons(_: {
         path: string,
-        preferences: {[key: string]: {enabled: boolean}},
+        preferences: { [key: string]: { enabled: boolean } },
         mods: typeof ADDONS_INFO.mods,
         dependencies: typeof ADDONS_INFO.mods,
 
@@ -341,7 +341,6 @@ export class ModpackManager {
             })
     }
 
-<<<<<<< Updated upstream
     public async ensureModpackLibs(modpack: string): Promise<boolean> {
         let version = this.modpacks[modpack].libs_version;
         if (!(await this.libsIntalled(version))) {
@@ -384,7 +383,7 @@ export class ModpackManager {
 
                 if (downloaded_path == '') {
                     log.info(`[MODPACK] <${addon_name}> download cancelled`);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('download-cancelled'); 
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('download-cancelled');
                     return false;
                 }
 
@@ -393,7 +392,7 @@ export class ModpackManager {
                 return true;
             }
         }
-        
+
         return true;
     }
 
@@ -431,7 +430,7 @@ export class ModpackManager {
                 }
             }
         }
-        
+
 
         return true; // Libs are present
     }
@@ -448,7 +447,6 @@ export class ModpackManager {
     }
 
     public async downloadLibs(modpack_name: string, force_download = false): Promise<boolean> {
-=======
     //! BETA-TESTING ONLY.
     //! BETA-TESTING ONLY.
 
@@ -486,7 +484,6 @@ export class ModpackManager {
     //! BETA-TESTING ONLY.
 
     public async downloadLibs(modpack_name: string, force_download = false) {
->>>>>>> Stashed changes
         let version = this.modpacks[modpack_name].libs_version;
         let folder = await this.ensureLibsDir(version);
         await this.clearLibsDir(version);
@@ -536,7 +533,7 @@ export class ModpackManager {
     public async downloadModpack(modpack_name: string, force_download = false): Promise<boolean> {
         if (this.modpacks[modpack_name].installed) return true;
         this.ensureModpackEnvironment(modpack_name);
-        
+
         let folder = await this.ensureModpackDir(modpack_name);
         await this.clearModpackDir(modpack_name);
         if (await fs.pathExists(path.join(folder, 'modpack.zip')) && !force_download) {
@@ -558,7 +555,7 @@ export class ModpackManager {
             )
             if (downloaded_path == '') {
                 log.info(`[MODPACK] <${modpack_name}> download cancelled`);
-                BrowserWindow.getAllWindows()[0]?.webContents.send('download-cancelled'); 
+                BrowserWindow.getAllWindows()[0]?.webContents.send('download-cancelled');
                 return false;
             }
         }
@@ -582,10 +579,10 @@ export class ModpackManager {
                 log.error(err);
                 return false;
             }
-            
+
             await fs.unlink(fldr);
             return true;
-        }) 
+        })
         return false;
     }
 
