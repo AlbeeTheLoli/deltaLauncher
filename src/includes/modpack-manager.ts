@@ -161,7 +161,7 @@ export class ModpackManager {
     public set libs(_: any) { }
 
     public modpackInstalledSync(modpack: string): boolean {
-        let pth = this._modpacks[modpack].path;
+        let pth = this.ensureModpackDirSync(modpack);
         if (fs.pathExistsSync(pth))
             return (fs.pathExistsSync(pth + '\\mods'));
         else return false;
@@ -213,11 +213,23 @@ export class ModpackManager {
         })
     }
 
-    public async ensureModpackDir(modpack_key: string): Promise<string> {
+    public ensureModpackDirSync(modpack_key: string): string {
         let pth = path.normalize(this.modpacks[modpack_key].path);
         if (this.sha) pth = path.join(this.root, 'experemental', this.sha);
-        await fs.ensureDir(pth)
+        fs.ensureDirSync(pth)
         return pth;
+    }
+
+    public async ensureModpackDir(modpack_key: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            try {
+                let installed = this.ensureModpackDirSync(modpack_key);
+                resolve(installed);
+            } catch (err) {
+                log.error(err);
+                reject(err)
+            }
+        })
     }
 
     public async ensureLibsDir(libs_version?: string): Promise<string> {
@@ -498,7 +510,7 @@ export class ModpackManager {
                 folder,
                 this.libs[version].link,
                 'libs.zip',
-                8,
+                this._settingsStorage.settings.download_threads,
                 (progress: any) => {
                     if (this.downloader.paused) return false;
                     log.info(progress.percent.toPrecision(2), progress.status);
@@ -549,7 +561,7 @@ export class ModpackManager {
                 folder,
                 this.modpacks[modpack_name].link,
                 'modpack.zip',
-                8,
+                this._settingsStorage.settings.download_threads,
                 (progress: any) => {
                     if (this.downloader.paused) return false;
                     log.info(progress.percent.toPrecision(2), progress.status);

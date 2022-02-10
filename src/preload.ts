@@ -176,6 +176,11 @@ window.onload = async () => {
     document.getElementById('app-reload')?.addEventListener('click', async () => {
         settingsInterface.saveSync();
         console.log('reloading');
+        
+        //@ts-expect-error
+        window.modpackManager.updateModpackDirs();
+        //@ts-expect-error
+        window.settingsInterface.updateThemesList()
 
         //@ts-expect-error
         window.modpackManager.downloader.cancel();

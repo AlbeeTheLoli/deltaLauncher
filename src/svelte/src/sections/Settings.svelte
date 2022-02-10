@@ -143,8 +143,8 @@
             <div class="smoll-gap"></div>
 
             {#if $global.settingsManager.settings.dev_mode}
-            <div class="big-gap"></div>
-            <div class="big-gap"></div>
+                <div class="big-gap"></div>
+                <div class="big-gap"></div>
                 <h1>DEV</h1>
                 <div class="smoll-gap"></div>
                 <Checkbox label="Показать консоль клиента" checked={$global.settingsManager.settings.modpack_settings.show_console_output}></Checkbox>
@@ -157,7 +157,10 @@
         </Setting>
         {#if $global.settingsManager.settings.dev_mode}
             <Setting title='Экспериментальная ветка'>
-                <input bind:value={$global.modpackManager.sha} class="java-params" type="text" placeholder="Не указаны">
+                <input bind:value={$global.modpackManager.sha} on:change={() => {
+                    $global.modpackManager.updateModpackDirs();
+                    $global.modpackManager.modpacks[$global.modpackManager.modpack].installed = $global.modpackManager.modpacks[$global.modpackManager.modpack].installed;
+                }} class="java-params" type="text" placeholder="Не указаны">
             </Setting>
         {/if}
     </SettingsContainer>

@@ -20,6 +20,7 @@ const settings_pattern = {
     selected_user: -1,
     auto_go_to_server_thing: false,
     version: "",
+    download_threads: 8,
     modpack_settings: {
         allocated_memory: 8,
         optimization_level: 2,
