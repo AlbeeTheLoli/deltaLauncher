@@ -45,6 +45,8 @@ export class ModpackManager {
     private log_location = log.transports.file.getFile().path.split('\\main.log')[0];
 
     private _selected_modpack = Object.keys(MODPACK_INFO)[0];
+
+    public sha = '';
     public set modpack(to: any) {
         this._selected_modpack = to;
         this._settingsStorage.settings.on_modpack = to;
@@ -213,6 +215,7 @@ export class ModpackManager {
 
     public async ensureModpackDir(modpack_key: string): Promise<string> {
         let pth = path.normalize(this.modpacks[modpack_key].path);
+        if (this.sha) pth = path.join(this.root, 'experemental', this.sha);
         await fs.ensureDir(pth)
         return pth;
     }
@@ -449,19 +452,19 @@ export class ModpackManager {
     //! BETA-TESTING ONLY.
     //! BETA-TESTING ONLY.
 
-    public async downloadSHA(repos: string, sha: string, owner?: 'Ektadelta'): Promise<any> {
-        let folder = this.root + `/${sha}/`;
+    public async downloadSHA(folder: string, repos: string, sha: string, owner='Ektadelta'): Promise<string> {
         await fs.ensureDirSync(folder);
+        let _downloaded_path = '';
 
         if (await fs.pathExists(path.join(folder, `${sha}.zip`))) {
             log.info('[SHA] Are you sure in what are you doing?');
         } else {
             BrowserWindow.getAllWindows()[0]?.webContents.send('download-started', sha);
-            let link = `https://github.com/${owner}/${repos}}/archive/${sha}.zip`;
-            let downloaded_path = await this.downloader.download(
+            let link = `https://github.com/${owner}/${repos}/archive/${sha}.zip`;
+            _downloaded_path = await this.downloader.download(
                 folder,
                 link,
-                `${sha}.zip`,
+                `modpack.zip`,
                 1,
                 (progress: any) => {
                     if (this.downloader.paused) return;
@@ -469,14 +472,14 @@ export class ModpackManager {
                     BrowserWindow.getAllWindows()[0]?.webContents.send('download-progress', progress);
                 }
             )
-            if (downloaded_path == '') {
-                log.info('[SHA] Finally, downloaded!');
-                return;
+            if (_downloaded_path == '') {
+                log.info('[SHA] download cancelled.');
+                return '';
             }
         }
 
         BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished');
-        return true;
+        return _downloaded_path;
     }
 
     //! BETA-TESTING ONLY.
@@ -529,9 +532,10 @@ export class ModpackManager {
         }
     }
 
+    // await this.downloadSHA(folder, `${capitalizeFirstLetter(modpack_name)}`, this.sha);
+
     public async downloadModpack(modpack_name: string, force_download = false): Promise<boolean> {
         if (this.modpacks[modpack_name].installed) return true;
-        this.ensureModpackEnvironment(modpack_name);
 
         let folder = await this.ensureModpackDir(modpack_name);
         await this.clearModpackDir(modpack_name);
@@ -552,6 +556,7 @@ export class ModpackManager {
                     BrowserWindow.getAllWindows()[0]?.webContents.send('download-progress', progress);
                 }
             )
+
             if (downloaded_path == '') {
                 log.info(`[MODPACK] <${modpack_name}> download cancelled`);
                 BrowserWindow.getAllWindows()[0]?.webContents.send('download-cancelled');
@@ -559,10 +564,61 @@ export class ModpackManager {
             }
         }
 
-        BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished', modpack_name);
-        await this.unzipModpack(folder, modpack_name);
-        BrowserWindow.getAllWindows()[0]?.webContents.send('unzipping-finished');
+        return true;
+    }
 
+    public async installModpack(modpack_name: string, force_download = false): Promise<boolean> {
+        if (this.modpacks[modpack_name].installed) return true;
+        this.ensureModpackEnvironment(modpack_name);
+
+        let folder = await this.ensureModpackDir(modpack_name);
+        await this.clearModpackDir(modpack_name);
+        if (await fs.pathExists(path.join(folder, 'modpack.zip')) && !force_download) {
+            log.info(`[MODPACK] <${modpack_name}> looks like archive is already downloaded... skipping download.`);
+        } else {
+            if (this.sha) {
+                await this.downloadSHA(folder, `${capitalizeFirstLetter(modpack_name)}`, this.sha);
+            } else {
+                await this.downloadModpack(modpack_name);
+            }
+        }
+
+        if (this.sha) {
+            BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished', modpack_name);
+            await this.unzipModpack(folder, modpack_name);
+
+            if (await fs.pathExists(path.join(folder, `${capitalizeFirstLetter(modpack_name)}-${this.sha}`))) {
+                let src = path.join(folder, `${capitalizeFirstLetter(modpack_name)}-${this.sha}`);
+                let dest = folder;
+                await copyWithProgress(src, dest, (progress: any) => {
+                    log.info(progress);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
+                        percent: progress.progress * 100
+                    });
+                }, 250);
+            } else {
+                let download_contents = await fs.readdir(folder);
+                log.info(download_contents);
+                if (await fs.pathExists(path.join(download_contents[0], 'mods'))) {
+                    log.info('found mods folder in downloaded files... probably already a modpack so won\' copy')
+                } else {
+                    let src = path.join(folder, `${capitalizeFirstLetter(modpack_name)}-${this.sha}`);
+                    let dest = folder;
+                    await copyWithProgress(src, dest, (progress: any) => {
+                        log.info(progress);
+                        BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
+                            percent: progress.progress * 100
+                        });
+                    }, 250);
+                }
+            }
+
+            BrowserWindow.getAllWindows()[0]?.webContents.send('unzipping-finished');
+        } else {
+            BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished', modpack_name);
+            await this.unzipModpack(folder, modpack_name); 
+            BrowserWindow.getAllWindows()[0]?.webContents.send('unzipping-finished');
+        }
         // BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-start');
         // await this.moveLibs(modpack_name);
         this.modpacks[modpack_name].installed = true;

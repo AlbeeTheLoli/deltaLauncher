@@ -118,7 +118,7 @@
                 await $global.modpackManager.ensureModpackEnvironment(l_modpack)
 
                 console.log('downloading modpack:', l_modpack);
-                await $global.modpackManager.downloadModpack(l_modpack);
+                await $global.modpackManager.installModpack(l_modpack);
 
                 console.log('checking env...');
                 await $global.modpackManager.ensureModpackEnvironment(l_modpack)

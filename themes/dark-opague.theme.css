@@ -4,7 +4,7 @@
     @author: 'Albee'
     @version: '1.0'
     @description: 'Dark variant of default theme'
-    @default-bg: 'https://cdn.discordapp.com/attachments/726363070594809897/878787436992405554/tumblr_ac24d8245aa6f6a6f80c6845c575c306_33106754_1280.jpg'
+    @default-bg: 'https://cdn.discordapp.com/attachments/726363070594809897/941398770875240498/Screenshot_2022-02-10_212058.png'
 */
 
 :root {
@@ -42,7 +42,7 @@
     --clr-tertiary: #6857ff;
     --clr-secondary: #4c3be6;
 
-    --alt-primary: #ff1f45; /* ff1846 */
+    --alt-primary: #ff1f45; /* ff1f45 */
     --alt-tertiary: #ff3456;
     --alt-secondary: #e7193c;
 
@@ -59,10 +59,10 @@ header {
     --header-profile-bg: var(--clr-primary);
     --header-profile-text: var(--text-primary);
 
-    --header-bg: var(--bg-secondary);
+    --header-bg: rgba(var(--text-secondary-rgb), .04);
     --header-nav-text: rgba(var(--text-primary-rgb), .32);
-    --header-nav-text-hover: rgba(var(--text-primary-rgb), .48);
-    --header-nav-text-active: var(--alt-primary);
+    --header-nav-text-hover: rgba(var(--text-primary-rgb), .64);
+    --header-nav-text-active: var(--alt-tertiary);
 }
 
 main {
@@ -83,24 +83,29 @@ main {
 }
 
 footer {
-    --footer-bg: var(--bg-secondary);
+    --footer-bg: rgba(var(--text-secondary-rgb), .04);
     --main-button-text: var(--text-primary);
     --sub-button-text: var(--text-primary);
 
-    --dropmenu-main-bg: var(--bg-primary);
+    --dropmenu-main-bg: var(--alt-primary);
     --dropmenu-main-h1: var(--text-primary);
-    --dropmenu-main-p: var(--text-primary);
-    --dropmenu-sub-even-bg: var(--bg-primary);
-    --dropmenu-sub-odd-bg: var(--bg-secondary);
+    --dropmenu-main-p: var(--text-secondary);
+    --dropmenu-sub-even-bg: var(--alt-primary);
+    --dropmenu-sub-odd-bg: var(--alt-secondary);
     --dropmenu-sub-h1: var(--text-primary);
-    --dropmenu-sub-p: var(--text-primary);
-    --dropmenu-toggle-fill: var(--text-primary);
+    --dropmenu-sub-p: var(--text-secondary);
+    --dropmenu-toggle-bg: var(--dropmenu-main-bg);
+    --dropmenu-toggle-fill: var(--dropmenu-main-h1);
 
-    --dropmenu-main-h1-hover: var(--text-tertiary-alt);
-    --dropmenu-main-p-hover: var(--text-tertiary-alt);
-    --dropmenu-sub-h1-hover: var(--text-tertiary-alt);
-    --dropmenu-sub-p-hover: var(--text-tertiary-alt);
-    --dropmenu-toggle-fill-hover: var(--text-tertiary-alt);
+    --dropmenu-main-bg-hover: var(--alt-tertiary);
+    --dropmenu-main-h1-hover: var(--text-primary);
+    --dropmenu-main-p-hover: var(--text-secondary);
+    --dropmenu-sub-even-bg-hover: var(--alt-tertiary);
+    --dropmenu-sub-odd-bg-hover: var(--alt-tertiary);
+    --dropmenu-sub-h1-hover: var(--text-primary);
+    --dropmenu-sub-p-hover: var(--text-secondary);
+    --dropmenu-toggle-bg-hover: var(--dropmenu-main-bg-hover);
+    --dropmenu-toggle-fill-hover: var(--dropmenu-main-h1-hover);
 
     --playmenu-main-h1: var(--text-primary);
     --playmenu-main-p: var(--text-primary);

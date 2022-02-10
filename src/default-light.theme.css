@@ -72,6 +72,28 @@
     --app-text: var(--text-primary);
     --app-icon-clr: var(--text-primary);
 
+    /* start page (login one) */
+
+    --start-bg: var(--bg-primary);
+    --start-text: var(--text-primary);
+    --start-link: var(--clr-tertiary);
+    --start-link-hover: var(--alt-primary);
+
+    --start-input-placeholder: rgba(var(--text-primary-rgb), .16);
+    --start-input-text: rgba(var(--text-primary-rgb), 1);
+    --start-input-underline-unfocused: rgba(var(--text-secondary-rgb), .16);
+    --start-input-underline-base: rgba(var(--text-secondary-rgb), .32);
+    --start-input-underline-fill: rgba(var(--clr-primary-rgb), 1);
+    --start-input-underline-full: rgba(var(--clr-primary-rgb), .64);
+    --start-input-underline-error: rgba(var(--alt-primary-rgb), 1);
+
+    --start-button-text: rgba(var(--text-primary-rgb), 1);
+    --start-button-background: rgba(var(--text-tertiary-rgb), .04);
+    --start-button-border: rgba(var(--text-tertiary-rgb), .08);
+    --start-button-text-hover: rgba(var(--bg-primary-rgb), 1);
+    --start-button-background-hover: rgba(var(--clr-primary-rgb), 1);
+    --start-button-border-hover: rgba(var(--clr-primary-rgb), 1);
+
     /* header (kinda obvious ngl) */
 
     --header-height: 76px;
@@ -104,7 +126,7 @@
     /* footer */
 
     --footer-height: 76px;
-    --footer-bg: var(--bg-primary);
+    --footer-bg: var(--bg-tertiary);
     --footer-text: var(--text-primary);
 
     --main-button-bg: var(--clr-primary);

@@ -10,6 +10,7 @@
     import DirSetting from '../../components/settings/_DirSetting.svelte';
     import SelectFile from '../../components/settings/_SelectFile.svelte';
     import Scrollable from '../../components/Scrollable.svelte';
+    import TextField from '../../components/TextField.svelte'
     import { onMount } from "svelte";
 
     //@ts-expect-error
@@ -154,6 +155,11 @@
             
 
         </Setting>
+        {#if $global.settingsManager.settings.dev_mode}
+            <Setting title='Экспериментальная ветка'>
+                <input bind:value={$global.modpackManager.sha} class="java-params" type="text" placeholder="Не указаны">
+            </Setting>
+        {/if}
     </SettingsContainer>
     <div class="flex-filler"></div>
     <div class="general-info">
