@@ -176,16 +176,16 @@
         },
     }
 
-    $global.ipcRenderer.on('modpack-initializing', (event, { modpack }) => {
+    $global.ipcRenderer.on('modpack-initializing', (event, { modpack_name }) => {
         locked = false;
     });
 
-    $global.ipcRenderer.on('modpack-launching', (event, { modpack }) => {
+    $global.ipcRenderer.on('modpack-launching', (event, { modpack_name }) => {
         locked = true;
-        global.overlay.show(`Запуск ${global.capitalizeFirstLetter(modpack)}`, 'Пожалуйста, не выключайте лаунчер.', true);
+        global.overlay.show(`Запуск ${global.capitalizeFirstLetter(modpack_name)}`, 'Пожалуйста, не выключайте лаунчер.', true);
     });
 
-    $global.ipcRenderer.on('modpack-launched', (event, { modpack }) => {
+    $global.ipcRenderer.on('modpack-launched', (event, { modpack_name }) => {
         locked = false;
         global.overlay.hide();
     });

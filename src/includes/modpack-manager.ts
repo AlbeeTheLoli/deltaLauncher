@@ -47,6 +47,9 @@ export class ModpackManager {
     private _selected_modpack = Object.keys(MODPACK_INFO)[0];
 
     public sha = '';
+    public status = 'idle' as 'idle' | 'download' | 'launched' | 'install' | 'ensure-env' | 'unzipping' | 'moving-libs' ;
+    public downloading_item = '';
+
     public set modpack(to: any) {
         this._selected_modpack = to;
         this._settingsStorage.settings.on_modpack = to;
@@ -362,7 +365,9 @@ export class ModpackManager {
         let version = this.modpacks[modpack].libs_version;
         if (!(await this.libsIntalled(version))) {
             console.log('downloading libs:', version);
+            this.status = 'download';
             await this.downloadLibs(modpack);
+            this.status = 'idle';
 
             return false; // Libs were downloaded
         }
@@ -391,21 +396,20 @@ export class ModpackManager {
                     }
                 }
 
-                BrowserWindow.getAllWindows()[0]?.webContents.send('download-started', addon_name);
+                this.status = 'download';
                 let downloaded_path = await this.downloader.download(dir, addon.link, addon.filename, 2, (progress) => {
                     if (this.downloader.paused) return false;
                     log.info(progress.percent.toPrecision(2), progress.status);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('download-progress', progress);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-progress', progress);
                 })
 
                 if (downloaded_path == '') {
                     log.info(`[MODPACK] <${addon_name}> download cancelled`);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('download-cancelled');
+                    this.status = 'idle';
                     return false;
                 }
 
-                BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-finished', addon_name);
-
+                this.status = 'idle';
                 return true;
             }
         }
@@ -460,7 +464,7 @@ export class ModpackManager {
         let libs_exist = await this.ensureModpackLibs(modpack);
         let add_ons_present = this.modpacks[modpack].installed && await this.ensureAddons(modpack);
 
-        BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-finished');
+        this.status = 'idle';
 
         return libs_exist && add_ons_present; // Everything is fine
     }
@@ -475,7 +479,6 @@ export class ModpackManager {
         if (await fs.pathExists(path.join(folder, `${sha}.zip`))) {
             log.info('[SHA] Are you sure in what are you doing?');
         } else {
-            BrowserWindow.getAllWindows()[0]?.webContents.send('download-started', sha);
             let link = `https://github.com/${owner}/${repos}/archive/${sha}.zip`;
             _downloaded_path = await this.downloader.download(
                 folder,
@@ -485,7 +488,7 @@ export class ModpackManager {
                 (progress: any) => {
                     if (this.downloader.paused) return;
                     log.info(progress.percent.toPrecision(2), progress.status);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('download-progress', progress);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-progress', progress);
                 }
             )
             if (_downloaded_path == '') {
@@ -493,8 +496,6 @@ export class ModpackManager {
                 return '';
             }
         }
-
-        BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished');
         return _downloaded_path;
     }
 
@@ -508,8 +509,9 @@ export class ModpackManager {
         if (await fs.pathExists(path.join(folder, 'libs.zip')) && !force_download) {
             log.info('[MODPACK] <libs> looks like archive is already downloaded... skipping download.');
         } else {
-            BrowserWindow.getAllWindows()[0]?.webContents.send('download-started', 'libs');
             this._libs[version].link = await this.getLatestLinkToLibs();
+            this.status = 'download';
+            this.downloading_item = 'libs';
             let downloaded_path = await this.downloader.download(
                 folder,
                 this.libs[version].link,
@@ -518,7 +520,7 @@ export class ModpackManager {
                 (progress: any) => {
                     if (this.downloader.paused) return false;
                     log.info(progress.percent.toPrecision(2), progress.status);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('download-progress', progress);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-progress', progress);
                 }
             )
             if (downloaded_path == '') {
@@ -526,21 +528,22 @@ export class ModpackManager {
                 return false;
             }
         }
-
-        BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished');
+        this.status = 'install';
         await this.processLibs(folder, modpack_name);
+        this.status = 'idle';
+
         return true;
     }
 
     public async processLibs(folder: string, modpack_name: string): Promise<boolean> {
         log.info('[MODPACK] <libs> unzipping...');
         try {
+            this.status = 'unzipping';
             await extract(path.join(folder, 'libs.zip'), { dir: folder })
-            BrowserWindow.getAllWindows()[0]?.webContents.send('unzipping-finished');
             log.info('[MODPACK] <libs> success');
 
             if (await fs.pathExists(path.join(folder, 'libs.zip'))) await fs.unlink(path.join(folder, 'libs.zip'))
-            BrowserWindow.getAllWindows()[0]?.webContents.send('libs-downloaded');
+            this.status = 'install';
             return true;
         } catch (err) {
             log.error('[MODPACK] <libs> Error occured while unpacking libraries...');
@@ -560,7 +563,6 @@ export class ModpackManager {
             return true;
         } else {
             this._modpacks[modpack_name].link = await this.getLatestLinkToModpack(modpack_name);
-            BrowserWindow.getAllWindows()[0]?.webContents.send('download-started', modpack_name);
             let downloaded_path = await this.downloader.download(
                 folder,
                 this.modpacks[modpack_name].link,
@@ -569,13 +571,12 @@ export class ModpackManager {
                 (progress: any) => {
                     if (this.downloader.paused) return false;
                     log.info(progress.percent.toPrecision(2), progress.status);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('download-progress', progress);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-progress', progress);
                 }
             )
 
             if (downloaded_path == '') {
                 log.info(`[MODPACK] <${modpack_name}> download cancelled`);
-                BrowserWindow.getAllWindows()[0]?.webContents.send('download-cancelled');
                 return false;
             }
         }
@@ -593,8 +594,12 @@ export class ModpackManager {
             log.info(`[MODPACK] <${modpack_name}> looks like archive is already downloaded... skipping download.`);
         } else {
             if (this.sha) {
+                this.status = 'download';
+                this.downloading_item = 'sha';
                 await this.downloadSHA(folder, `${capitalizeFirstLetter(modpack_name)}`, this.sha);
             } else {
+                this.status = 'download';
+                this.downloading_item = modpack_name;
                 await this.downloadModpack(modpack_name);
             }
         }
@@ -629,9 +634,9 @@ export class ModpackManager {
                 }
             }
 
-            BrowserWindow.getAllWindows()[0]?.webContents.send('unzipping-finished');
+            this.status = 'install';
         } else {
-            BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished', modpack_name);
+            this.status = 'install';
             await this.unzipModpack(folder, modpack_name); 
             BrowserWindow.getAllWindows()[0]?.webContents.send('unzipping-finished');
         }
@@ -661,6 +666,7 @@ export class ModpackManager {
         log.info(`[MODPACK] <${modpack_name}> unzipping...`);
         return new Promise(async (resolve, reject) => {
             try {
+                this.status = 'unzipping';
                 let fldr = path.join(folder, 'modpack.zip');
                 await extract(fldr, { dir: folder });
                 let interval = setInterval(async () => {
@@ -825,6 +831,7 @@ export class ModpackManager {
             process.stdout.on('data', (data) => {
                 if (!window_opened) {
                     if (data.toString().split("Starts to replace vanilla recipe ingredients with ore ingredients.").length > 1) {
+                        log.error(`[MODPACK] <${modpack_name}> window opened`);
                         window_opened = true;
                         BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-launched', { modpack_name });
                         _resolve('launched');

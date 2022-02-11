@@ -23,9 +23,11 @@
         })
     }
 
-    $: downloading = $global.state == 'download';
+    $: downloading = $global.modpackManager.downloader.downloading;
+    $: downloading_item = $global.modpackManager.downloading_item;
     $: paused = $global.modpackManager.downloader.paused;
-    $: launched = $global.state == 'launched';
+    $: status = $global.modpackManager.status;
+    $: launched = false;
 
     let soft_downloading = false;
     let download_progress = 0;
@@ -60,62 +62,30 @@
         }
     }
 
-    let h1 = 'Тут что то будет...';
-    let p = 'Наверное....';
-    let downloading_item = '';
-
     $global.ipcRenderer.on('download-started', (event, item) => {
         console.log('STARTED');
         last_received_bytes = 0;
-
         downloading_item = item;
-        if (downloading_item == 'libs') {
-            h1 = `Подготовка к загрузке библиотек.`;
-        } else {
-            h1 = `Подготовка к загрузке: ${global.capitalizeFirstLetter(downloading_item)}.`;
-        }
-        p = `Ожидание ответа сервера...`;
-        
-        $global.state = 'download';
     })
 
     let last_received_bytes = 0;
     let speed = 0;
-    $global.ipcRenderer.on('download-progress', (event, progress) => {
-        console.log('PROGRESS', progress);
-        speed = (progress.received_size - last_received_bytes) / 1024 / 1024;
-        last_received_bytes = progress.received_size;
-        download_progress = progress.percent;
 
-        $global.state = 'download';
-    });
+    // $global.ipcRenderer.on('download-progress', (event, progress) => {
+    //     console.log('PROGRESS', progress);
+    //     speed = (progress.received_size - last_received_bytes) / 1024 / 1024;
+    //     last_received_bytes = progress.received_size;
+    //     download_progress = progress.percent;
+    // });
 
-    $global.ipcRenderer.on('download-finished', () => {
-        $global.state = 'download';
-    });
 
-    $global.ipcRenderer.on('download-cancelled', () => {
-        $global.state = 'idle';
-    });
+    // $global.ipcRenderer.on('modpack-downloaded', () => {
+    //     downloading_item = '';
+    // });
 
-    $global.ipcRenderer.on('modpack-downloaded', () => {
-        downloading_item = '';
-        $global.state = 'install';
-    });
-
-    $global.ipcRenderer.on('moving-libs-start', async (event) => {
-        $global.state = 'install';
-    });
-
-    $global.ipcRenderer.on('moving-libs-progress', async (event, progress) => {
-        download_progress = progress.percent / 100;
-
-        $global.state = 'install';
-    });
-
-    $global.ipcRenderer.on('moving-libs-finished', () => {
-        $global.state = 'idle';
-    });
+    // $global.ipcRenderer.on('moving-libs-progress', async (event, progress) => {
+    //     download_progress = progress.percent / 100;
+    // });
 </script>
 
 <footer class:download={downloading} class:soft-download={launched}>
