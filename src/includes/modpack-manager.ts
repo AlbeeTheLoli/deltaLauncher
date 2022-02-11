@@ -342,14 +342,16 @@ export class ModpackManager {
     }
 
     public async clearModpackDir(modpack_name: string): Promise<void> {
-        let pth = this.modpacks[modpack_name].path;
+        let pth = await this.ensureModpackDir(modpack_name);
         if (await fs.pathExists(pth))
             fs.readdir(pth, (err, files) => {
+                log.info(`<${modpack_name}>`, `[ ${ files.join(', ')} ]`)
                 files.forEach(file => {
-                    if (file.toString().split('.').length > 1 && file.toString() != '.mixin.out' && file.toString() != '.git') {
+                    try {
+                        log.info(`<${modpack_name}>`, `removing ${file}...`)
                         if (fs.pathExistsSync(path.join(pth, file))) fs.unlinkSync(path.join(pth, file));
-                    }
-                    else {
+                    } catch (err) {
+                        log.info(`<${modpack_name}>`, `${file} is a dir...`)
                         if (fs.pathExistsSync(path.join(pth, file))) rimraf.sync(path.join(pth, file));
                     }
                 })
@@ -415,30 +417,32 @@ export class ModpackManager {
         let addons = this.addons;
         for (const addon_name in addons.preferences) {
             if (addons.preferences[addon_name]) {
-                const el = addons.mods[addon_name];
+                const el = addons.mods[addon_name] || addons.dependencies[addon_name];
                 if (addons.preferences[addon_name].enabled) {
                     await this.ensureAddon(addon_name);
 
-                    log.info(`<${addon_name}> is enabled. adding...`)
                     let dir = await this.ensureModpackDir(modpack);
                     let src = path.join(await this.ensureAddonsDir(), el.filename);
                     let dest = path.join(dir, 'mods', el.filename);
+                    log.info(`<${addon_name}> is enabled. adding:`, src, '->', dest);
                     if (!(await fs.pathExists(dest))) {
                         if (await fs.pathExists('')) await fs.copyFile(src, dest);
                     }
                     for (const dependency of el.dependencies) {
+                        log.info('<'+addon_name+'>', 'adding dependency: ', dependency);
                         let dependency_src = path.join(await this.ensureAddonsDir(), addons.dependencies[dependency].filename);
                         let dependency_dest = path.join(dir, 'mods', addons.dependencies[dependency].filename);
                         if (!(await fs.pathExists(dependency_dest))) await fs.copyFile(dependency_src, dependency_dest);
                     }
                 } else {
-                    log.info(`<${addon_name}> is disabled. removing...`)
                     let dir = await this.ensureModpackDir(modpack);
                     let dest = path.join(dir, 'mods', el.filename);
+                    log.info(`<${addon_name}> is disabled. removing:`, dest);
                     if (await fs.pathExists(dest)) {
                         await fs.unlink(dest);
                     }
                     for (const dependency of el.dependencies) {
+                        log.info('<'+addon_name+'>', 'removing dependency: ', dependency);
                         let dependency_pth = path.join(dir, 'mods', addons.dependencies[dependency].filename);
                         if (await fs.pathExists(dependency_pth)) await fs.unlink(dependency_pth);
                     }
@@ -774,8 +778,12 @@ export class ModpackManager {
 
             log.info(`[MODPACK] <${modpack_name}> launching...`);
 
+            BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-initializing', { modpack_name });
+
             let game_dir = await this.ensureModpackDir(modpack_name);
             let libs_dir = await this.ensureLibsDir('1.12');
+
+            BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-launching', { modpack_name });
 
             let libs_paths = await (await this.findAllFiles(libs_dir, '.jar')).join(';');
 
@@ -789,7 +797,7 @@ export class ModpackManager {
             let final_command = `${game_dir[0]}:&&cd "${cd_path}"&&"${java_path}" ${base_command}`;
 
             log.info(`[MODPACK] <${modpack_name}> final command: ${final_command}`);
-
+            
             let process = spawn(final_command, [], { windowsHide: true, shell: true })
 
             let window_opened = false;
@@ -818,7 +826,7 @@ export class ModpackManager {
                 if (!window_opened) {
                     if (data.toString().split("Starts to replace vanilla recipe ingredients with ore ingredients.").length > 1) {
                         window_opened = true;
-                        BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-launched', modpack_name);
+                        BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-launched', { modpack_name });
                         _resolve('launched');
                     }
                 }

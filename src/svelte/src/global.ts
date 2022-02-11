@@ -23,7 +23,7 @@ function createGlobal() {
             once: undefined as unknown as typeof ipcRenderer.once,
             removeAllListeners: undefined as unknown as typeof ipcRenderer.removeAllListeners,
         },
-        state: 'idle' as 'idle' | 'download',
+        state: 'idle' as 'idle' | 'download' | 'launched' | 'install',
     });
 
     let obj = {

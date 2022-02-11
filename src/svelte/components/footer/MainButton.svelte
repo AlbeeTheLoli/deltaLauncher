@@ -13,7 +13,7 @@
     let locked = false;
     $: _locked = ((max_ram < 6) || (max_ram - 6) < 0) ? (true) : ((states[btn_state].locked) ? true : locked);
     let paused = false;
-    $: btn_state = $global.state == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ((Object.keys($global.modpackManager.launched_modpacks).includes($global.modpackManager.modpack)) ? 'launched' : 'play') : 'download');
+    $: btn_state = $global.state == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ($global.state == 'launched' ? 'launched' : 'play') : 'download');
     $: states = {
         'play': {
             h1: 'Играть',
@@ -69,7 +69,6 @@
                     }
                 }
 
-                global.overlay.show(`Запуск ${global.capitalizeFirstLetter(modpack)}`, 'Пожалуйста, не выключайте лаунчер.', true);
                 let res = await $global.modpackManager.launchModpack(
                     modpack, 
                     6,
@@ -77,7 +76,6 @@
                     $global.authInterface.logged_user.login,
                     $global.authInterface.logged_user.uuid
                 );
-                global.overlay.hide();
                 $global.modpackManager.launched_modpacks = $global.modpackManager.launched_modpacks;
 
                 switch (res) {
@@ -178,33 +176,68 @@
         },
     }
 
-    $global.ipcRenderer.on('download-started', () => {
-        locked = true;
-    })
-
-    $global.ipcRenderer.on('download-progress', (event, progress) => {
-        locked = false;
-    })
-
-    $global.ipcRenderer.on('download-finished', () => {
-        locked = true;
-    })
-
-    $global.ipcRenderer.on('modpack-downloaded', () => {
-        locked = true;
-    })
-
-    $global.ipcRenderer.on('modpack-cancelled', () => {
-        locked = false;
-    })
-
-    $global.ipcRenderer.on('moving-libs-progress', async (event, progress) => {
-        locked = true;
-    });
-
-    $global.ipcRenderer.on('moving-libs-finished', () => {
+    $global.ipcRenderer.on('modpack-initializing', (event, { modpack }) => {
         locked = false;
     });
+
+    $global.ipcRenderer.on('modpack-launching', (event, { modpack }) => {
+        locked = true;
+        global.overlay.show(`Запуск ${global.capitalizeFirstLetter(modpack)}`, 'Пожалуйста, не выключайте лаунчер.', true);
+    });
+
+    $global.ipcRenderer.on('modpack-launched', (event, { modpack }) => {
+        locked = false;
+        global.overlay.hide();
+    });
+
+    $global.ipcRenderer.on('modpack-exit', (event, { modpack_name, code, signal }) => {
+        $global.modpackManager.launched_modpacks = $global.modpackManager.launched_modpacks;
+        console.log(`<${modpack_name}>`, `exit [${code} ${signal}]`)
+        locked = false;
+    });
+
+    $global.ipcRenderer.on('modpack-error', (event, { modpack_name, code, signal }) => {
+        $global.modpackManager.launched_modpacks = $global.modpackManager.launched_modpacks;
+        console.log(`<${modpack_name}>`, `error [${code} ${signal}]`)
+        locked = false;
+    });
+
+    let _last_state: any;
+    global.subscribe((value) => {
+        if (_last_state != value.state || value.state == 'download') {
+            let state = value.state;
+            console.log(`changing state to: ${state}`)
+
+            switch (state) {
+                case 'idle':
+                    locked = false;
+                    break;
+                
+                case 'download':
+                    locked = false;
+                    break;
+                
+                case 'install':
+                    if ($global.modpackManager.downloader.progress.status == 'downloading') {
+                        locked = false;
+                    } else {
+                        locked = true;
+                    }
+
+                    break;
+            
+                case 'launched':
+                    locked = true;
+                    break;
+
+                default:
+                    locked = true;
+                    break;
+            }
+        }
+        _last_state = value.state;
+    })
+
 </script>
 
 <div class:download={$global.state == 'download'} class="main-button-wrapper">

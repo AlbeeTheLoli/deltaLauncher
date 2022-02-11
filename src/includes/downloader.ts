@@ -86,6 +86,12 @@ export class Downloader {
     //@ts-expect-error
     public async getInfo(url: string): {total_bytes: number} {
         let actual_attempts = 0; 
+        this.progress = {
+            percent: 0,
+            received_size: 0,
+            total_size: -1,
+            status: 'awaiting',
+        }
         while (actual_attempts < 20) {
             actual_attempts++;;
             let attempts = 0; 
@@ -281,7 +287,7 @@ export class Downloader {
                                 percent: 1,
                                 received_size: total_bytes,
                                 total_size: total_bytes,
-                                status: 'finished',
+                                status: 'idle',
                             }
                             onProgress(this.progress);
     

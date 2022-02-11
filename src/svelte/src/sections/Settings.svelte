@@ -59,12 +59,12 @@
         <Setting title='Параметры запуска Java' 
             tip={{p: 'Неправильные параметры могут повлечь проблемы с запуском и нестабильность игры в целом. Не советуем писать сюда что либо просто так.'}}>
             
-            <input class="java-params" type="text" placeholder="Не указаны">
+            <input class="java-params" bind:value={$global.settingsManager.settings.modpack_settings.java_parameters} type="text" placeholder="Не указаны">
         </Setting>
 
         <Setting title='Дополнительные моды'>
             {#each Object.keys($global.modpackManager.addons.preferences) as addn}
-                <Checkbox label={global.capitalizeFirstLetter(addn)} bind:checked={$global.modpackManager.addons.preferences[addn].enabled}></Checkbox>
+                <Checkbox label={$global.modpackManager.addons.mods[addn].display_name} bind:checked={$global.modpackManager.addons.preferences[addn].enabled}></Checkbox>
                 <div class="smoll-gap"></div>
             {/each}
         </Setting>
@@ -137,9 +137,9 @@
                 if ($global.settingsManager.root) global.shell.openPath($global.settingsManager.root);
             }}>Открыть корневую папку</p>
             <div class="big-gap"></div>
-            <Checkbox label="Убрать анимации" checked={$global.settingsManager.settings.appearance.reduced_motion}></Checkbox>
+            <Checkbox label="Убрать анимации" bind:checked={$global.settingsManager.settings.appearance.reduced_motion}></Checkbox>
             <div class="smoll-gap"></div>
-            <Checkbox label="Использовать встроенную JVM (Java)" checked={$global.settingsManager.settings.modpack_settings.use_builtin_java}></Checkbox>
+            <Checkbox label="Использовать встроенную JVM (Java)" bind:checked={$global.settingsManager.settings.modpack_settings.use_builtin_java}></Checkbox>
             <div class="smoll-gap"></div>
 
             {#if $global.settingsManager.settings.dev_mode}
@@ -147,7 +147,7 @@
                 <div class="big-gap"></div>
                 <h1>DEV</h1>
                 <div class="smoll-gap"></div>
-                <Checkbox label="Показать консоль клиента" checked={$global.settingsManager.settings.modpack_settings.show_console_output}></Checkbox>
+                <Checkbox label="Показать консоль клиента" bind:checked={$global.settingsManager.settings.modpack_settings.show_console_output}></Checkbox>
                 <div class="smoll-gap"></div>
             {/if}
         </Setting>

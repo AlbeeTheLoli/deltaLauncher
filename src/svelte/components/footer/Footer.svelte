@@ -24,8 +24,12 @@
     }
 
     $: downloading = $global.state == 'download';
+    $: paused = $global.modpackManager.downloader.paused;
+    $: launched = $global.state == 'launched';
+
     let soft_downloading = false;
     let download_progress = 0;
+    let install_status = '';
 
     let servers_menus = [];
 
@@ -76,75 +80,45 @@
     })
 
     let last_received_bytes = 0;
+    let speed = 0;
     $global.ipcRenderer.on('download-progress', (event, progress) => {
         console.log('PROGRESS', progress);
-        let speed = (progress.received_size - last_received_bytes) / 1024 / 1024;
+        speed = (progress.received_size - last_received_bytes) / 1024 / 1024;
         last_received_bytes = progress.received_size;
-        
         download_progress = progress.percent;
-
-        if (downloading_item == 'libs') {
-            h1 = `Скачивание библиотек...`;
-        } else {
-            h1 = `Скачивание: ${global.capitalizeFirstLetter(downloading_item)}...`;
-        }
-        p = `Скорость: ${speed.toPrecision(2)} Мб в секунду`;
-
-        $global.state = 'download';
-    })
-
-    $global.ipcRenderer.on('download-finished', () => {
-        console.log('FINISHED');
-
-        h1 = `Распаковка файлов...`;
-        p = 'Это может занять некторое время.';
-
-        $global.state = 'download';
-    })
-
-    $global.ipcRenderer.on('download-cancelled', () => {
-        console.log('CANCELLED');
-
-        h1 = 'Тут что то будет...';
-        p = 'Наверное....';
-        
-        $global.state = 'idle';
-    })
-
-    $global.ipcRenderer.on('modpack-downloaded', () => {
-        downloading_item = '';
-        console.log('DOWNLOADED');
-        
-        h1 = 'Завершение...';
-        p = 'Это может занять некторое время.';
-
-        $global.state = 'download';
-    })
-
-    $global.ipcRenderer.on('moving-libs-start', async (event) => {
-        h1 = `Перенос библиотек...`;
-        p = 'Это может занять некторое время.';
-
-        $global.state = 'download';
-    })
-
-    $global.ipcRenderer.on('moving-libs-progress', async (event, progress) => {
-        h1 = `Перенос библиотек: ${(progress.percent).toFixed(1)}%`;
-        p = 'Это может занять некторое время.';
-        download_progress = progress.percent / 100;
 
         $global.state = 'download';
     });
 
-    $global.ipcRenderer.on('moving-libs-finished', () => {
-        h1 = 'Тут что то будет...';
-        p = 'Наверное...';
+    $global.ipcRenderer.on('download-finished', () => {
+        $global.state = 'download';
+    });
 
+    $global.ipcRenderer.on('download-cancelled', () => {
+        $global.state = 'idle';
+    });
+
+    $global.ipcRenderer.on('modpack-downloaded', () => {
+        downloading_item = '';
+        $global.state = 'install';
+    });
+
+    $global.ipcRenderer.on('moving-libs-start', async (event) => {
+        $global.state = 'install';
+    });
+
+    $global.ipcRenderer.on('moving-libs-progress', async (event, progress) => {
+        download_progress = progress.percent / 100;
+
+        $global.state = 'install';
+    });
+
+    $global.ipcRenderer.on('moving-libs-finished', () => {
         $global.state = 'idle';
     });
 </script>
 
-<footer class:download={downloading} class:soft-download={soft_downloading} >
+<footer class:download={downloading} class:soft-download={launched}>
     <DropMenu bind:locked={downloading} h1={global.capitalizeFirstLetter($global.modpackManager.modpack)} p={'Разработчик'} menus={servers_menus.filter((el) => {return el.id != $global.modpackManager.modpack})} />
     <div id="footer-bar" class="footer-bar">
         <div class="progress-bar">
@@ -158,8 +132,32 @@
             </div>
         </div>
         <div class="info">
-            <h1>{h1}</h1>
-            <p>{p}</p>
+            {#if downloading}
+                {#if download_progress == 0}
+                    <h1>Подготовка к загрузке{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}...</h1>
+                    <p>Ожидание ответа сервера...</p>
+                {:else if download_progress < 100}
+                    <h1>Скачивание{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}...</h1>
+                    {#if paused}
+                        <p>Пауза</p>
+                    {:else}
+                        <p>Скорость: {speed.toPrecision(2)} Мб в секунду</p>
+                    {/if}
+                {:else}
+                    <h1>Установка{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}...</h1>
+                    <p>{install_status ? install_status : 'Это может занять некоторое время...'}</p>
+                {/if}
+            {:else if launched}
+                <h1>Время в игре:</h1>
+                <p>Разработчик</p>
+            {:else}
+                <h1>Тут что-то будет...</h1>
+                {#if $global.modpackManager.sha}
+                    <p>Эксперементальная ветка: {$global.modpackManager.sha}</p>
+                {:else}
+                    <p>Версия: 0.0.0.0</p>
+                {/if}
+            {/if}
         </div>
     </div>
     <MainButton />

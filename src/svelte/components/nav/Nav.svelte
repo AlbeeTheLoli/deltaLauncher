@@ -33,9 +33,9 @@
 </script>
 
 <header>
-    <div id="header-nav" class="nav noselect no-drag">
+    <div id="header-nav" class="nav noselect">
         {#each section_names as _, i}
-            <div class="nav-element no-drag" class:active={section == i} on:click={() => section = i}>{section_names[i]}</div>
+            <div class="nav-element" class:active={section == i} on:click={() => section = i}>{section_names[i]}</div>
         {/each}
     </div>
     <div class="flex-filler drag"></div>
