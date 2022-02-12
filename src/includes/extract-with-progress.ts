@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import extract from 'extract-zip';
 //@ts-expect-error
 import getFolderSize from 'get-folder-size';
 
@@ -35,7 +35,7 @@ const defaultProgressCallback = (data: any) => {
 	process.stdout.cursorTo(0);
 	const elapsedGB = bToGB(elapsedBytes).toFixed(2)
 	const totalGB = bToGB(totalBytes).toFixed(2)
-	process.stdout.write(`copying... ${elapsedGB} / ${totalGB} GB\t\t${(progress * 100).toFixed(2)}%\t\tspeed: ${speed.toFixed(2)} MB/s\t\tETA: ${formatTime(remainingSecs)}`)
+	process.stdout.write(`extracting... ${elapsedGB} / ${totalGB} GB\t\t${(progress * 100).toFixed(2)}%\t\tspeed: ${speed.toFixed(2)} MB/s\t\tETA: ${formatTime(remainingSecs)}`)
 }
 
 export interface IProgress {
@@ -45,7 +45,8 @@ export interface IProgress {
     status: string,
     from: 'downloader' | 'extract' | 'copy',
 }
-export async function copyWithProgress(src: string, dest: string, onProgress: (progress: IProgress) => void, interval: number, smoothing = 0.1) {
+
+export async function extractWithProgress(src: string, dest: string, onProgress: (progress: IProgress) => void, interval: number, smoothing = 0.1) {
     const sizeSrc: number = await getSize(src);
     const initialSizeDest: number = await getSize(dest);
     const startTime: number = Date.now();
@@ -76,15 +77,15 @@ export async function copyWithProgress(src: string, dest: string, onProgress: (p
 				received_size: sizeDest,
 				total_size: sizeSrc,
 				percent: progress,
-				status: 'copying',
-    			from: 'copy',
+				status: 'extracting',
+    			from: 'extract',
 			});
 		} catch (err) {
 			console.error(err)
 		}
     }, interval);
 
-    await fs.copy(src, dest);
+    await extract(src, { dir: dest });
     clearInterval(intervalId);
-    console.log(`\ncopy completed in ${millisToSecs(Date.now() - startTime).toFixed(0)} seconds`);
+    console.log(`\ncopy extract in ${millisToSecs(Date.now() - startTime).toFixed(0)} seconds`);
 };

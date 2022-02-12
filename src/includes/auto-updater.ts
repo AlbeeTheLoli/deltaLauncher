@@ -2,7 +2,7 @@ import { IpcMain, remote as rmt, ipcRenderer as ipcR, app, BrowserWindow, shell 
 import logger from 'electron-log';
 import fetch from 'node-fetch'
 import path from 'path';
-import { Downloader, progress } from './downloader';
+import { Downloader, IProgress } from './downloader';
 import { SettingsStorage } from './settings-manager';
 import rimraf from 'rimraf';
 import fs from 'fs-extra'

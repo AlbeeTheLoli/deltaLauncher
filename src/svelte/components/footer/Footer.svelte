@@ -1,5 +1,6 @@
 <script lang="ts">
     import { global } from '../../src/global';
+import Settings from '../../src/sections/Settings.svelte';
     import DropMenu from './DropMenu.svelte';
     import MainButton from "./MainButton.svelte";
 
@@ -23,14 +24,13 @@
         })
     }
 
-    $: downloading = $global.modpackManager.downloader.downloading;
+    $: status = $global.state;
+    $: downloading = status != 'idle' && status != 'launched';
     $: downloading_item = $global.modpackManager.downloading_item;
     $: paused = $global.modpackManager.downloader.paused;
-    $: status = $global.modpackManager.status;
     $: launched = false;
 
     let soft_downloading = false;
-    let download_progress = 0;
     let install_status = '';
 
     let servers_menus = [];
@@ -62,33 +62,9 @@
         }
     }
 
-    $global.ipcRenderer.on('download-started', (event, item) => {
-        console.log('STARTED');
-        last_received_bytes = 0;
-        downloading_item = item;
-    })
-
-    let last_received_bytes = 0;
-    let speed = 0;
-
-    // $global.ipcRenderer.on('download-progress', (event, progress) => {
-    //     console.log('PROGRESS', progress);
-    //     speed = (progress.received_size - last_received_bytes) / 1024 / 1024;
-    //     last_received_bytes = progress.received_size;
-    //     download_progress = progress.percent;
-    // });
-
-
-    // $global.ipcRenderer.on('modpack-downloaded', () => {
-    //     downloading_item = '';
-    // });
-
-    // $global.ipcRenderer.on('moving-libs-progress', async (event, progress) => {
-    //     download_progress = progress.percent / 100;
-    // });
 </script>
 
-<footer class:download={downloading} class:soft-download={launched}>
+<footer class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion} class:download={downloading} class:soft-download={launched}>
     <DropMenu bind:locked={downloading} h1={global.capitalizeFirstLetter($global.modpackManager.modpack)} p={'Разработчик'} menus={servers_menus.filter((el) => {return el.id != $global.modpackManager.modpack})} />
     <div id="footer-bar" class="footer-bar">
         <div class="progress-bar">
@@ -96,26 +72,32 @@
                 <div class="top"></div>
                 <div class="bottom"></div>
             </div>
-            <div class="filler" style="width: {download_progress * 100}%;">
+            <div class="filler" style="width: {$global.download_progress.percent * 100}%;">
                 <div class="top"></div>
                 <div class="bottom"></div>
             </div>
         </div>
         <div class="info">
             {#if downloading}
-                {#if download_progress == 0}
+                {#if status == 'init-install'}
                     <h1>Подготовка к загрузке{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}...</h1>
                     <p>Ожидание ответа сервера...</p>
-                {:else if download_progress < 100}
+                {:else if status == 'download'}
                     <h1>Скачивание{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}...</h1>
                     {#if paused}
                         <p>Пауза</p>
+                    {:else if $global.download_progress.speed}
+                        <p>Скорость: {$global.download_progress.speed.toPrecision(2)} Мб в секунду</p>
                     {:else}
-                        <p>Скорость: {speed.toPrecision(2)} Мб в секунду</p>
+                        <p>Загрузка...</p>
                     {/if}
                 {:else}
                     <h1>Установка{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}...</h1>
-                    <p>{install_status ? install_status : 'Это может занять некоторое время...'}</p>
+                    {#if status == 'unzipping'}
+                        <p>Распаковка архива... </p>
+                    {:else if status == 'moving-libs'}
+                        <p>Перенос библиотек: {$global.download_progress.percent}%</p>
+                    {/if}
                 {/if}
             {:else if launched}
                 <h1>Время в игре:</h1>

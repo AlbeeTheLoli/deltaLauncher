@@ -14,7 +14,7 @@
 	import SelectOverlay from '../components/overlays/SelectOverlay.svelte';
 	import Checkbox from '../components/Checkbox.svelte';
 	import TextField from '../components/TextField.svelte';
-
+	
 	enum SECTIONS {
 		HOME,
 		SETTINGS,
@@ -54,6 +54,23 @@
 		console.log('hello from renderer :)');
 		console.log('theme:', $global.authInterface.logged_user);
 
+		$global.ipcRenderer.on('modpack-manager-status-changed', (event, { to }) => {
+			console.log(`changing state to: ${to}`)
+			$global.state = to;
+		});
+
+		let last_received_bytes = 0;
+    	let speed = 0;
+		$global.ipcRenderer.on('modpack-manager-download-progress', (event, progress) => {
+			console.log(`<progress\\${progress.from}> download progress:`, progress)
+			speed = (progress.received_size - last_received_bytes) / 1024 / 1024;
+			$global.download_progress = {
+				...progress,
+				speed: (speed && (speed != NaN)) ? speed : 0,
+			};
+			last_received_bytes = progress.received_size;
+		});
+
 		loaded = true;
 	})
 
@@ -68,7 +85,7 @@
 
 {#if loaded}
 
-<div id="bg" class="bg">
+<div id="bg" class="bg" class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion}>
 	<div id="bg-opacity" class="color" style="transition: none;"></div>
 	<div id="bg-blur" class="filter"></div>
 	<div class="img">
@@ -79,7 +96,7 @@
 	</div>
 </div>
 
-<div class="app-frame">
+<div class="app-frame" class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion}>
 	<div class="flex-filler invisible drag"></div>
 	<div id="app-minimize" class="minimize no-drag">
 		<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
@@ -106,7 +123,7 @@
 
 <Nav {section_names} bind:section={section} userData={$global.authInterface.logged_user} />
 
-<main>
+<main class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion}>
 	<div class="section-wrapper custom-scrollbar" class:left={section < SECTIONS.HOME} class:right={section > SECTIONS.HOME}>
 		<Home />
 	</div>

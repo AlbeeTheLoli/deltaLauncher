@@ -48,13 +48,15 @@
     {/each}
     <div class="main-menu">
         <div on:mouseenter={() => show_sub = !strict} id="main-menu" class="info" on:click={() => {if (!locked) onclick()}}>
-            <h1>{h1}</h1>
-            <p>{p}</p>
+            {#if h1 && h1 != ''}<h1>{h1}</h1>{/if}
+            {#if p && p != ''}<p>{p}</p>{/if}
         </div>
         <div id="open-sub-menu" class:active={show_sub} on:mouseenter={() => show_sub = true} class="open-sub-menu">
-            <svg xmlns="http://www.w3.org/2000/svg" width="10.854" height="6.426" viewBox="0 0 10.854 6.426">
-                <path id="Path_397" data-name="Path 397" d="M0,0,4.012,4.012,8.025,0" transform="translate(9.44 5.012) rotate(180)" fill="none" stroke="var(--fill)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-            </svg>                      
+            {#if menus.length > 0} 
+                <svg xmlns="http://www.w3.org/2000/svg" width="10.854" height="6.426" viewBox="0 0 10.854 6.426">
+                    <path id="Path_397" data-name="Path 397" d="M0,0,4.012,4.012,8.025,0" transform="translate(9.44 5.012) rotate(180)" fill="none" stroke="var(--fill)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+            {/if}                    
         </div>
     </div>
 </div>

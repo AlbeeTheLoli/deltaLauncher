@@ -1,10 +1,12 @@
 import type { AuthInterface } from '../../includes/auth-manager'
-import type { ModpackManager } from '../../includes/modpack-manager'
+import type { TStatus, ModpackManager } from '../../includes/modpack-manager'
 import type { SettingsInterface } from '../../includes/settings-manager'
+
+import type {IProgress} from '../../includes/downloader';
 
 import { writable } from 'svelte/store';
 
-import type { IpcRendererEvent, ipcRenderer } from 'electron';
+import type { ipcRenderer } from 'electron';
 
 function capitalizeFirstLetter(string: string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -23,7 +25,13 @@ function createGlobal() {
             once: undefined as unknown as typeof ipcRenderer.once,
             removeAllListeners: undefined as unknown as typeof ipcRenderer.removeAllListeners,
         },
-        state: 'idle' as 'idle' | 'download' | 'launched' | 'install',
+        state: 'idle' as TStatus,
+        download_progress: {
+            percent: 0,
+            total_size: 0,
+            received_size: 0,
+            status: 'idle',
+        } as IProgress & {speed: number},
     });
 
     let obj = {

@@ -33,13 +33,16 @@ enum GRAPHICS_LEVELS {
 }
 
 import { MODPACK_INFO, ADDONS_INFO, IAddonInfo } from './modpack.info';
+import { extractWithProgress } from './extract-with-progress';
+
+export type TStatus = 'idle' | 'download' | 'launched' | 'init-install' | 'install' | 'post-install' | 'ensure-env' | 'unzipping' | 'moving-libs';
 
 export class ModpackManager {
     private __fs: undefined | typeof fs = undefined;
     private _graphics_level = GRAPHICS_LEVELS.DEFAULT;
     private _root = '';
-    private _modpacks: any;
-    private _libs: any;
+    public _modpacks: any;
+    public _libs: any;
     private _resources: any;
     private _settingsStorage: SettingsStorage;
     private log_location = log.transports.file.getFile().path.split('\\main.log')[0];
@@ -47,12 +50,28 @@ export class ModpackManager {
     private _selected_modpack = Object.keys(MODPACK_INFO)[0];
 
     public sha = '';
-    public status = 'idle' as 'idle' | 'download' | 'launched' | 'install' | 'ensure-env' | 'unzipping' | 'moving-libs' ;
+    private _status: TStatus = 'idle';
+    private _currentModpackLaunched = false;
+    public set status(to: TStatus) {
+        this._status = this._currentModpackLaunched ? 'launched' : to;
+        BrowserWindow.getAllWindows()[0].webContents.send('modpack-manager-status-changed', { to })
+    }
+
+    public get status() {
+        return this._status;
+    }
+
     public downloading_item = '';
 
     public set modpack(to: any) {
         this._selected_modpack = to;
         this._settingsStorage.settings.on_modpack = to;
+        if (this.processManager.launched_modpacks[to]) {
+            this._currentModpackLaunched = true;
+        } else {
+            this._currentModpackLaunched = false;
+        }
+        this.status = this.status;
     }
 
     public get modpack() {
@@ -60,6 +79,8 @@ export class ModpackManager {
     }
 
     public downloader: Downloader;
+    public modpackInstaller: ModpackInstaller;
+    public processManager: ProcessManager;
 
     public constructor(remote: typeof rmt, root: string, settingsStorage: SettingsStorage) {
         log.info('init');
@@ -68,12 +89,14 @@ export class ModpackManager {
         this._root = root;
         this.ensureRoot();
 
+        this.downloader = new Downloader();
+        this.modpackInstaller = new ModpackInstaller(root, this.downloader, this, settingsStorage);
+        this.processManager = new ProcessManager(root, this, settingsStorage);
+
         this.updateLibsDirs();
         this.updateModpackDirs();
         this.updateResourcesDirs();
         this.ensureAddonsDir();
-
-        this.downloader = new Downloader();
 
         if (this._settingsStorage.settings.dev_mode) {
             this.__fs = fs;
@@ -95,17 +118,16 @@ export class ModpackManager {
                 },
             }
 
-            this._modpacks[mdpck].installed = this.modpackInstalledSync(mdpck);
+            this._modpacks[mdpck].installed = this.modpackInstaller.modpackInstalledSync(mdpck);
         }
 
-        this.ensureModpackDirs();
+        this.ensureModpackDirectories();
     }
 
     public updateLibsDirs(): void {
         this._libs = {
             path: path.normalize(path.join(this._settingsStorage.settings.modpacks.libs.path.replace(/%ROOT%/g, this._root))),
             '1.12': {
-                link: '',
                 path: path.normalize(path.join(this._settingsStorage.settings.modpacks.libs.path.replace(/%ROOT%/g, this._root), '1.12')),
                 version: 1.0,
                 installed: false,
@@ -134,13 +156,7 @@ export class ModpackManager {
 
     public set root(_) { }
 
-    public get addons(): {
-        path: string,
-        preferences: { [key: string]: { enabled: boolean } },
-        mods: typeof ADDONS_INFO.mods,
-        dependencies: typeof ADDONS_INFO.mods,
-
-    } {
+    public get addons(): { path: string, preferences: { [key: string]: { enabled: boolean } }, mods: typeof ADDONS_INFO.mods, dependencies: typeof ADDONS_INFO.mods, } {
         return {
             path: this._settingsStorage.settings.modpack_settings.add_ons.path.replace(/%ROOT%/g, this.root),
             preferences: {
@@ -157,64 +173,11 @@ export class ModpackManager {
 
     }) { }
 
-    public get modpacks() { return this._modpacks; }
+    public get modpacks() { return this._modpacks; } 
     public set modpacks(_: any) { }
 
     public get libs() { return this._libs; }
     public set libs(_: any) { }
-
-    public modpackInstalledSync(modpack: string): boolean {
-        let pth = this.ensureModpackDirSync(modpack);
-        if (fs.pathExistsSync(pth))
-            return (fs.pathExistsSync(pth + '\\mods'));
-        else return false;
-    }
-
-    public modpackInstalled(modpack: string): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            try {
-                let installed = this.modpackInstalledSync(modpack)
-                resolve(installed);
-            } catch (err) {
-                log.error(err);
-                reject(err)
-            }
-        })
-    }
-
-    public libsIntalledSync(version: string, modpack?: string): boolean {
-        let pth = this._libs[version].path;
-        if (fs.pathExistsSync(pth))
-            if (modpack) {
-                let modpack_pth = this._modpacks[modpack].path;
-                console.log(modpack_pth + '\\assets');
-                return ((fs.readdirSync(pth).length > 0
-                    && fs.pathExistsSync(pth + '\\assets')
-                    && fs.pathExistsSync(pth + '\\libraries')
-                    && fs.pathExistsSync(pth + '\\versions')) && (
-                        fs.pathExistsSync(modpack_pth + '\\assets')
-                        && fs.pathExistsSync(modpack_pth + '\\libraries')
-                        && fs.pathExistsSync(modpack_pth + '\\versions')));
-            } else {
-                return (fs.readdirSync(pth).length > 0
-                    && fs.pathExistsSync(pth + '\\assets')
-                    && fs.pathExistsSync(pth + '\\libraries')
-                    && fs.pathExistsSync(pth + '\\versions'));
-            }
-        else return false;
-    }
-
-    public libsIntalled(version: string, modpack?: string): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            try {
-                let installed = this.libsIntalledSync(version, modpack);
-                resolve(installed);
-            } catch (err) {
-                log.error(err);
-                reject(err)
-            }
-        })
-    }
 
     public ensureModpackDirSync(modpack_key: string): string {
         let pth = path.normalize(this.modpacks[modpack_key].path);
@@ -235,29 +198,41 @@ export class ModpackManager {
         })
     }
 
-    public async ensureLibsDir(libs_version?: string): Promise<string> {
+    public async ensureModpackDirectories(): Promise<void> {
+        for (const modpack_key in this.modpacks) {
+            const modpack = this.modpacks[modpack_key];
+            await fs.ensureDir(path.normalize(modpack.path))
+        }
+    }
+
+    public ensureLibsDirSync(libs_version?: string): string {
         if (libs_version) {
             let pth = this.libs[libs_version].path;
-            await fs.ensureDir(pth)
+            fs.ensureDirSync(pth)
             return pth;
         } else {
             let pth = this.libs.path;
-            await fs.ensureDir(pth)
+            fs.ensureDirSync(pth)
             return pth;
         }
+    }
+
+    public async ensureLibsDir(libs_version?: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            try {
+                let installed = this.ensureLibsDirSync(libs_version);
+                resolve(installed);
+            } catch (err) {
+                log.error(err);
+                reject(err)
+            }
+        })
     }
 
     public async ensureAddonsDir() {
         let pth = path.normalize(this.addons.path);
         await fs.ensureDir(pth)
         return pth;
-    }
-
-    public async ensureModpackDirs(): Promise<void> {
-        for (const modpack_key in this.modpacks) {
-            const modpack = this.modpacks[modpack_key];
-            await fs.ensureDir(path.normalize(modpack.path))
-        }
     }
 
     public async isFirstLaunch(modpack: string): Promise<boolean> {
@@ -292,6 +267,236 @@ export class ModpackManager {
         fs.writeFile(pth, JSON.stringify(res));
     }
 
+    public async ensureModpack(modpack_name: string, force_install=false) {
+        let libs_version = this._modpacks[modpack_name].libs_version;
+        let libs_installed = await this.modpackInstaller.installLibs(libs_version);
+        let modpack_installed = await this.modpackInstaller.installModpack(modpack_name);
+        let environment_modpack = await this.ensureModpackEnvironment(modpack_name);
+
+        this.status = 'idle';
+
+        return libs_installed && modpack_installed && environment_modpack;
+    }
+
+    public async ensureModpackEnvironment(modpack_name: string, force_install=false) {
+        let addons_installed = await this.modpackInstaller.ensureAddonsInModpack(modpack_name);
+
+        return addons_installed;
+    }
+
+    public async cancelCurrentDownload() {
+        this.modpackInstaller.cancelled = true;
+        this.downloader.cancel();
+        this.status = 'idle';
+        this.downloading_item = '';
+    }
+}
+
+class ModpackInstaller {
+    private _settingsStorage: SettingsStorage;
+    private _downloader: Downloader;
+    private _modpackManager: ModpackManager;
+    
+    public cancelled = false;
+    public busy = false;
+    public root: string;
+
+    constructor(root: string, downloader: Downloader, modpackManager: ModpackManager, settingsStorage: SettingsStorage) {
+        this._settingsStorage = settingsStorage;
+        this._downloader = downloader;
+        this._modpackManager = modpackManager;
+        this.root = root;
+    }
+
+    //. >>> ESSENTIALS
+    //#region ESSENTIALS ---------------------------------------------------
+
+    public modpackInstalledSync(modpack: string): boolean {
+        let pth = this._modpackManager.ensureModpackDirSync(modpack);
+        if (fs.pathExistsSync(pth))
+            return (fs.pathExistsSync(pth + '\\mods'));
+        else return false;
+    }
+
+    public modpackInstalled(modpack: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            try {
+                let installed = this.modpackInstalledSync(modpack)
+                resolve(installed);
+            } catch (err) {
+                log.error(err);
+                reject(err)
+            }
+        })
+    }
+
+    public libsIntalledSync(version='1.12', modpack?: string): boolean {
+        let pth = this._modpackManager.ensureLibsDirSync(version);
+        if (fs.pathExistsSync(pth))
+            if (modpack) {
+                let modpack_pth = this._modpackManager.ensureModpackDirSync(modpack);
+                console.log(modpack_pth + '\\assets');
+                return ((fs.readdirSync(pth).length > 0
+                    && fs.pathExistsSync(pth + '\\assets')
+                    && fs.pathExistsSync(pth + '\\libraries')
+                    && fs.pathExistsSync(pth + '\\versions')) && (
+                        fs.pathExistsSync(modpack_pth + '\\assets')
+                        && fs.pathExistsSync(modpack_pth + '\\libraries')
+                        && fs.pathExistsSync(modpack_pth + '\\versions')));
+            } else {
+                return (fs.readdirSync(pth).length > 0
+                    && fs.pathExistsSync(pth + '\\assets')
+                    && fs.pathExistsSync(pth + '\\libraries')
+                    && fs.pathExistsSync(pth + '\\versions'));
+            }
+        else return false;
+    }
+
+    public libsIntalled(version?: string, modpack?: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            try {
+                let installed = this.libsIntalledSync(version, modpack);
+                resolve(installed);
+            } catch (err) {
+                log.error(err);
+                reject(err)
+            }
+        })
+    }
+
+    //#endregion
+    
+    //. >>> LIBS
+    //#region LIBS ---------------------------------------------------
+
+    public async getLatestLinkToLibs(version?: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            nodeFetch(`https://api.github.com/repos/Ektadelta/Encore/tags`, {
+                method: 'GET',
+            }).then(res => res.json()).then(res => {
+                if (res[0].zipball_url) {
+                    log.info(res[0].name);
+                    resolve(res[0].name);
+                }
+            }).catch(err => { log.error(err) })
+        }).then(res => {
+            return `https://github.com/Ektadelta/Encore/releases/download/${res}/Encore-${res}.zip`
+        })
+    }
+
+    public async downloadLibsArchive(version='1.12', force_download=false): Promise<string> {
+        let link = await this.getLatestLinkToLibs(version);
+        let folder = await this._modpackManager.ensureLibsDir(version);
+        log.info(`[MODPACK] <libs\\${version}> downloading archive...`);
+
+        if (await fs.pathExists(path.join(folder, 'libs.zip')) && !force_download) {
+            log.info(`[MODPACK] <libs\\${version}> looks like archive is already downloaded... skipping download.`);
+            return path.join(folder, 'libs.zip');
+        } else {
+            let downloaded_path = await this._downloader.download(
+                folder,
+                link,
+                'libs.zip',
+                this._settingsStorage.settings.download_threads,
+                (progress: any) => {
+                    if (this._downloader.paused) return false;
+                    if (progress.status == 'download')
+                        this._modpackManager.status = 'download';
+                    log.info(progress.percent.toPrecision(2), progress.status);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-download-progress', progress);
+                }
+            )
+
+            return downloaded_path;
+        }
+    }
+
+    public async installLibs(version?: string, force_install=false): Promise<boolean> {
+        if (this.busy) return false;
+        this.busy = true;
+        let folder = await this._modpackManager.ensureLibsDir(version);
+        let archive = path.join(folder, 'libs.zip');
+
+        this._modpackManager.status = 'init-install';
+        this._modpackManager.downloading_item = 'libs';
+
+        if ((await this.libsIntalled(version)) == false) {
+            if ((await fs.pathExists(archive)) == false) {
+                archive = await this.downloadLibsArchive(version, force_install);
+
+                if (archive == '') {
+                    this.busy = false;
+                    return false;
+                }
+            }
+            
+            if (this.cancelled) {
+                log.info(`[MODPACK] <libs\\${version}> cancelled. skipping instalation...`);
+                this._modpackManager.status = 'idle';
+                this.cancelled = false;
+                this.busy = false;
+                return false;
+            }
+
+            this._modpackManager.status = 'install';
+
+            log.info(`[MODPACK] <libs\\${version}> unzipping...`);
+            try {
+                this._modpackManager.status = 'unzipping';
+
+                await extractWithProgress(archive, folder, (progress) => {
+                    log.info(`[MODPACK] <libs\\${version}> unzipping: ${progress.total_size / progress.received_size}`);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-download-progress', progress);
+                }, 250);
+                log.info(`[MODPACK] <libs\\${version}> unzipped`);
+
+                this._modpackManager.status = 'post-install';
+
+                if (await fs.pathExists(archive)) await fs.unlink(archive)
+
+                log.info(`[MODPACK] <libs\\${version}> installed`);
+                this.busy = false;
+                this.cancelled = false;
+                return true;
+            } catch (err) {
+                log.error(`[MODPACK] <libs\\${version}> error occured while unpacking libraries...`);
+                this.busy = false;
+                this.cancelled = false;
+                return false;
+            }
+        }
+
+        log.info(`[MODPACK] <libs\\${version}> already installed`);
+        this.busy = false;
+        this.cancelled = false;
+        return true;
+    }
+
+    public async uninstallLibs(version='1.12') {
+        if (this.busy) return false;
+        this.busy = true;
+        let pth = await this._modpackManager.ensureLibsDir(version);
+
+        if (await fs.pathExists(pth))
+            fs.readdir(pth, (err, files) => {
+                files.forEach(file => {
+                    try {
+                        log.info(`<libs\\${version}>`, `removing ${file}...`)
+                        if (fs.pathExistsSync(path.join(pth, file))) fs.unlinkSync(path.join(pth, file));
+                    } catch (err) {
+                        log.info(`<libs\\${version}>`, `${file} is a dir...`)
+                        if (fs.pathExistsSync(path.join(pth, file))) rimraf.sync(path.join(pth, file));
+                    }
+                })
+            })
+        this.busy = false;
+    }
+
+    //#endregion
+
+    //. >>> MODPACKS
+    //#region MODPACKS ---------------------------------------------------
+
     public async getLatestLinkToModpack(modpack_name: string): Promise<string> {
         return new Promise((resolve, reject) => {
             nodeFetch(`https://api.github.com/repos/Ektadelta/${capitalizeFirstLetter(modpack_name)}/tags`, {
@@ -307,81 +512,128 @@ export class ModpackManager {
         })
     }
 
-    public async getLatestLinkToLibs(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            nodeFetch(`https://api.github.com/repos/Ektadelta/Encore/tags`, {
-                method: 'GET',
-            }).then(res => res.json()).then(res => {
-                if (res[0].zipball_url) {
-                    log.info(res[0].name);
-                    resolve(res[0].name);
+    public async downloadModpackArchive(modpack_name: string, force_download=false) {
+        let link = await this.getLatestLinkToModpack(modpack_name);
+        let folder = await this._modpackManager.ensureModpackDir(modpack_name);
+        log.info(`[MODPACK] <modpack\\${modpack_name}> downloading archive...`);
+
+        if (await fs.pathExists(path.join(folder, 'modpack.zip')) && !force_download) {
+            log.info(`[MODPACK] <modpack\\${modpack_name}> looks like archive is already downloaded... skipping download.`);
+            return path.join(folder, 'modpack.zip');
+        } else {
+            let downloaded_path = await this._downloader.download(
+                folder,
+                link,
+                'modpack.zip',
+                this._settingsStorage.settings.download_threads,
+                (progress: any) => {
+                    if (this._downloader.paused) return false;
+                    if (this._downloader.downloading && progress.status == 'download')
+                        this._modpackManager.status = 'download';
+                    log.info(progress.percent.toPrecision(2), progress.status);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-download-progress', progress);
                 }
-            }).catch(err => { log.error(err) })
-        }).then(res => {
-            return `https://github.com/Ektadelta/Encore/releases/download/${res}/Encore-${res}.zip`
-        })
+            )
+
+            return downloaded_path;
+        }
     }
 
-    public async clearLibsDir(version?: string): Promise<void> {
-        let pth = '';
-        if (version) {
-            console.log(version);
-            pth = this.libs[version].path;
-        } else {
-            pth = this.libs.path;
+    public async installModpack(modpack_name: string, force_install=false) {
+        if (this.busy) return false;
+        this.busy = true;
+        let folder = await this._modpackManager.ensureModpackDir(modpack_name);
+        let archive = path.join(folder, 'modpack.zip');
+
+        this._modpackManager.status = 'init-install';
+        this._modpackManager.downloading_item = modpack_name;
+
+        if ((await this.modpackInstalled(modpack_name)) == false) {
+            if ((await fs.pathExists(archive)) == false) {
+                archive = await this.downloadModpackArchive(modpack_name, force_install);
+
+                if (archive == '') {
+                    this.busy = false;
+                    return false;
+                }
+            }
+
+            if (this.cancelled) {
+                log.info(`[MODPACK] <modpack\\${modpack_name}> cancelled. skipping instalation...`);
+                this._modpackManager.status = 'idle';
+                this.cancelled = false;
+                this.busy = false;
+                return false;
+            }
+
+            this._modpackManager.status = 'install';
+
+            log.info(`[MODPACK] <modpack\\${modpack_name}> unzipping...`);
+            try {
+                this._modpackManager.status = 'unzipping';
+
+                await extractWithProgress(archive, folder, (progress) => {
+                    log.info(`[MODPACK] <modpack\\${modpack_name}> unzipping: ${progress.received_size / progress.received_size}`);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-download-progress', progress);
+                }, 250);
+                log.info(`[MODPACK] <modpack\\${modpack_name}> unzipped`);
+
+                this._modpackManager.status = 'post-install';
+
+                if (await fs.pathExists(archive)) await fs.unlink(archive)
+
+                log.info(`[MODPACK] <modpack\\${modpack_name}> installed`);
+                this._modpackManager.status = 'idle';
+                this.cancelled = false;
+                this.busy = false;
+                return true;
+            } catch (err) {
+                log.error(`[MODPACK] <modpack\\${modpack_name}> error occured while unpacking ${modpack_name}...`);
+                this._modpackManager.status = 'idle';
+                this.cancelled = false;
+                this.busy = false;
+                return false;
+            }
         }
 
-        if (await fs.pathExists(pth))
-            fs.readdir(pth, (err, files) => {
-                files.forEach(file => {
-                    if (file.toString().split('.').length > 1 && file.toString() != '.mixin.out' && file.toString() != '.git') {
-                        if (fs.pathExistsSync(path.join(pth, file))) fs.unlinkSync(path.join(pth, file));
-                    }
-                    else {
-                        if (fs.pathExistsSync(path.join(pth, file))) rimraf.sync(path.join(pth, file));
-                    }
-                })
-            })
+        log.info(`[MODPACK] <modpack\\${modpack_name}> already installed`);
+        this.cancelled = false;
+        this.busy = false;
+        return true;
     }
 
-    public async clearModpackDir(modpack_name: string): Promise<void> {
-        let pth = await this.ensureModpackDir(modpack_name);
+    public async uninstallModpack(modpack_name: string) {
+        if (this.busy) return false;
+        this.busy = true;
+        let pth = await this._modpackManager.ensureModpackDir(modpack_name);
+
         if (await fs.pathExists(pth))
             fs.readdir(pth, (err, files) => {
-                log.info(`<${modpack_name}>`, `[ ${ files.join(', ')} ]`)
                 files.forEach(file => {
                     try {
-                        log.info(`<${modpack_name}>`, `removing ${file}...`)
+                        log.info(`<modpack\\${modpack_name}>`, `removing ${file}...`)
                         if (fs.pathExistsSync(path.join(pth, file))) fs.unlinkSync(path.join(pth, file));
                     } catch (err) {
-                        log.info(`<${modpack_name}>`, `${file} is a dir...`)
+                        log.info(`<modpack\\${modpack_name}>`, `${file} is a dir...`)
                         if (fs.pathExistsSync(path.join(pth, file))) rimraf.sync(path.join(pth, file));
                     }
                 })
             })
+        this.busy = false;
     }
+    
+    //#endregion
 
-    public async ensureModpackLibs(modpack: string): Promise<boolean> {
-        let version = this.modpacks[modpack].libs_version;
-        if (!(await this.libsIntalled(version))) {
-            console.log('downloading libs:', version);
-            this.status = 'download';
-            await this.downloadLibs(modpack);
-            this.status = 'idle';
-
-            return false; // Libs were downloaded
-        }
-
-        return true; // Libs are present
-    }
+    //. >>> ADDONS
+    //#region ADDONS ---------------------------------------------------
 
     public async ensureAddon(addon_name: string): Promise<boolean> {
         log.info(`checking <${addon_name}>....`);
-        let addon = this.addons.mods[addon_name] || this.addons.dependencies[addon_name];
-        let dir = await this.ensureAddonsDir();
+        let addon = this._modpackManager.addons.mods[addon_name] || this._modpackManager.addons.dependencies[addon_name];
+        let dir = await this._modpackManager.ensureAddonsDir();
         let pth = path.join(dir, addon.filename);
 
-        if (ADDONS_INFO.dependencies[addon_name] || this.addons.preferences[addon_name].enabled) {
+        if (ADDONS_INFO.dependencies[addon_name] || this._modpackManager.addons.preferences[addon_name].enabled) {
             if (await fs.pathExists(pth)) {
                 log.info(`<${addon_name}> exists. no need to download`);
                 return true;
@@ -396,20 +648,16 @@ export class ModpackManager {
                     }
                 }
 
-                this.status = 'download';
-                let downloaded_path = await this.downloader.download(dir, addon.link, addon.filename, 2, (progress) => {
-                    if (this.downloader.paused) return false;
+                let downloaded_path = await this._downloader.download(dir, addon.link, addon.filename, 2, (progress) => {
+                    if (this._downloader.paused) return false;
                     log.info(progress.percent.toPrecision(2), progress.status);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-progress', progress);
+                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-download-progress', progress);
                 })
 
                 if (downloaded_path == '') {
                     log.info(`[MODPACK] <${addon_name}> download cancelled`);
-                    this.status = 'idle';
                     return false;
                 }
-
-                this.status = 'idle';
                 return true;
             }
         }
@@ -417,16 +665,16 @@ export class ModpackManager {
         return true;
     }
 
-    public async ensureAddons(modpack: string): Promise<boolean> {
-        let addons = this.addons;
+    public async ensureAddonsInModpack(modpack: string): Promise<boolean> {
+        let addons = this._modpackManager.addons;
         for (const addon_name in addons.preferences) {
             if (addons.preferences[addon_name]) {
                 const el = addons.mods[addon_name] || addons.dependencies[addon_name];
                 if (addons.preferences[addon_name].enabled) {
                     await this.ensureAddon(addon_name);
 
-                    let dir = await this.ensureModpackDir(modpack);
-                    let src = path.join(await this.ensureAddonsDir(), el.filename);
+                    let dir = await this._modpackManager.ensureModpackDir(modpack);
+                    let src = path.join(await this._modpackManager.ensureAddonsDir(), el.filename);
                     let dest = path.join(dir, 'mods', el.filename);
                     log.info(`<${addon_name}> is enabled. adding:`, src, '->', dest);
                     if (!(await fs.pathExists(dest))) {
@@ -434,12 +682,12 @@ export class ModpackManager {
                     }
                     for (const dependency of el.dependencies) {
                         log.info('<'+addon_name+'>', 'adding dependency: ', dependency);
-                        let dependency_src = path.join(await this.ensureAddonsDir(), addons.dependencies[dependency].filename);
+                        let dependency_src = path.join(await this._modpackManager.ensureAddonsDir(), addons.dependencies[dependency].filename);
                         let dependency_dest = path.join(dir, 'mods', addons.dependencies[dependency].filename);
                         if (!(await fs.pathExists(dependency_dest))) await fs.copyFile(dependency_src, dependency_dest);
                     }
                 } else {
-                    let dir = await this.ensureModpackDir(modpack);
+                    let dir = await this._modpackManager.ensureModpackDir(modpack);
                     let dest = path.join(dir, 'mods', el.filename);
                     log.info(`<${addon_name}> is disabled. removing:`, dest);
                     if (await fs.pathExists(dest)) {
@@ -458,317 +706,21 @@ export class ModpackManager {
         return true; // Libs are present
     }
 
+    //#endregion
 
-    public async ensureModpackEnvironment(modpack: string): Promise<boolean> {
-        let dir = await this.ensureModpackDir(modpack);
-        let libs_exist = await this.ensureModpackLibs(modpack);
-        let add_ons_present = this.modpacks[modpack].installed && await this.ensureAddons(modpack);
+}
 
-        this.status = 'idle';
+class ProcessManager {
+    private _settingsStorage: SettingsStorage;
+    private _modpackManager: ModpackManager;
+    
+    public busy = false;
+    public root: string;
 
-        return libs_exist && add_ons_present; // Everything is fine
-    }
-
-    //! BETA-TESTING ONLY.
-    //! BETA-TESTING ONLY.
-
-    public async downloadSHA(folder: string, repos: string, sha: string, owner='Ektadelta'): Promise<string> {
-        await fs.ensureDirSync(folder);
-        let _downloaded_path = '';
-
-        if (await fs.pathExists(path.join(folder, `${sha}.zip`))) {
-            log.info('[SHA] Are you sure in what are you doing?');
-        } else {
-            let link = `https://github.com/${owner}/${repos}/archive/${sha}.zip`;
-            _downloaded_path = await this.downloader.download(
-                folder,
-                link,
-                `modpack.zip`,
-                1,
-                (progress: any) => {
-                    if (this.downloader.paused) return;
-                    log.info(progress.percent.toPrecision(2), progress.status);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-progress', progress);
-                }
-            )
-            if (_downloaded_path == '') {
-                log.info('[SHA] download cancelled.');
-                return '';
-            }
-        }
-        return _downloaded_path;
-    }
-
-    //! BETA-TESTING ONLY.
-    //! BETA-TESTING ONLY.
-
-    public async downloadLibs(modpack_name: string, force_download = false): Promise<boolean> {
-        let version = this.modpacks[modpack_name].libs_version;
-        let folder = await this.ensureLibsDir(version);
-        await this.clearLibsDir(version);
-        if (await fs.pathExists(path.join(folder, 'libs.zip')) && !force_download) {
-            log.info('[MODPACK] <libs> looks like archive is already downloaded... skipping download.');
-        } else {
-            this._libs[version].link = await this.getLatestLinkToLibs();
-            this.status = 'download';
-            this.downloading_item = 'libs';
-            let downloaded_path = await this.downloader.download(
-                folder,
-                this.libs[version].link,
-                'libs.zip',
-                this._settingsStorage.settings.download_threads,
-                (progress: any) => {
-                    if (this.downloader.paused) return false;
-                    log.info(progress.percent.toPrecision(2), progress.status);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-progress', progress);
-                }
-            )
-            if (downloaded_path == '') {
-                log.info('[MODPACK] <libs> download cancelled');
-                return false;
-            }
-        }
-        this.status = 'install';
-        await this.processLibs(folder, modpack_name);
-        this.status = 'idle';
-
-        return true;
-    }
-
-    public async processLibs(folder: string, modpack_name: string): Promise<boolean> {
-        log.info('[MODPACK] <libs> unzipping...');
-        try {
-            this.status = 'unzipping';
-            await extract(path.join(folder, 'libs.zip'), { dir: folder })
-            log.info('[MODPACK] <libs> success');
-
-            if (await fs.pathExists(path.join(folder, 'libs.zip'))) await fs.unlink(path.join(folder, 'libs.zip'))
-            this.status = 'install';
-            return true;
-        } catch (err) {
-            log.error('[MODPACK] <libs> Error occured while unpacking libraries...');
-            return false;
-        }
-    }
-
-    // await this.downloadSHA(folder, `${capitalizeFirstLetter(modpack_name)}`, this.sha);
-
-    public async downloadModpack(modpack_name: string, force_download = false): Promise<boolean> {
-        if (this.modpacks[modpack_name].installed) return true;
-
-        let folder = await this.ensureModpackDir(modpack_name);
-        await this.clearModpackDir(modpack_name);
-        if (await fs.pathExists(path.join(folder, 'modpack.zip')) && !force_download) {
-            log.info(`[MODPACK] <${modpack_name}> looks like archive is already downloaded... skipping download.`);
-            return true;
-        } else {
-            this._modpacks[modpack_name].link = await this.getLatestLinkToModpack(modpack_name);
-            let downloaded_path = await this.downloader.download(
-                folder,
-                this.modpacks[modpack_name].link,
-                'modpack.zip',
-                this._settingsStorage.settings.download_threads,
-                (progress: any) => {
-                    if (this.downloader.paused) return false;
-                    log.info(progress.percent.toPrecision(2), progress.status);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-progress', progress);
-                }
-            )
-
-            if (downloaded_path == '') {
-                log.info(`[MODPACK] <${modpack_name}> download cancelled`);
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public async installModpack(modpack_name: string, force_download = false): Promise<boolean> {
-        if (this.modpacks[modpack_name].installed) return true;
-        this.ensureModpackEnvironment(modpack_name);
-
-        let folder = await this.ensureModpackDir(modpack_name);
-        await this.clearModpackDir(modpack_name);
-        if (await fs.pathExists(path.join(folder, 'modpack.zip')) && !force_download) {
-            log.info(`[MODPACK] <${modpack_name}> looks like archive is already downloaded... skipping download.`);
-        } else {
-            if (this.sha) {
-                this.status = 'download';
-                this.downloading_item = 'sha';
-                await this.downloadSHA(folder, `${capitalizeFirstLetter(modpack_name)}`, this.sha);
-            } else {
-                this.status = 'download';
-                this.downloading_item = modpack_name;
-                await this.downloadModpack(modpack_name);
-            }
-        }
-
-        if (this.sha) {
-            BrowserWindow.getAllWindows()[0]?.webContents.send('download-finished', modpack_name);
-            await this.unzipModpack(folder, modpack_name);
-
-            if (await fs.pathExists(path.join(folder, `${capitalizeFirstLetter(modpack_name)}-${this.sha}`))) {
-                let src = path.join(folder, `${capitalizeFirstLetter(modpack_name)}-${this.sha}`);
-                let dest = folder;
-                await copyWithProgress(src, dest, (progress: any) => {
-                    log.info(progress);
-                    BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
-                        percent: progress.progress * 100
-                    });
-                }, 250);
-            } else {
-                let download_contents = await fs.readdir(folder);
-                log.info(download_contents);
-                if (await fs.pathExists(path.join(download_contents[0], 'mods'))) {
-                    log.info('found mods folder in downloaded files... probably already a modpack so won\' copy')
-                } else {
-                    let src = path.join(folder, `${capitalizeFirstLetter(modpack_name)}-${this.sha}`);
-                    let dest = folder;
-                    await copyWithProgress(src, dest, (progress: any) => {
-                        log.info(progress);
-                        BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
-                            percent: progress.progress * 100
-                        });
-                    }, 250);
-                }
-            }
-
-            this.status = 'install';
-        } else {
-            this.status = 'install';
-            await this.unzipModpack(folder, modpack_name); 
-            BrowserWindow.getAllWindows()[0]?.webContents.send('unzipping-finished');
-        }
-        // BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-start');
-        // await this.moveLibs(modpack_name);
-        this.modpacks[modpack_name].installed = true;
-        BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-downloaded', modpack_name);
-
-        return true;
-    }
-
-    public async clearModpackArchive(modpack_name: string): Promise<boolean> {
-        let fldr = path.join(await this.ensureModpackDir(modpack_name), 'modpack.zip');
-        if (await fs.pathExists(fldr)) fs.access(fldr, fs.constants.W_OK, async (err) => {
-            if (err) {
-                log.error(err);
-                return false;
-            }
-
-            await fs.unlink(fldr);
-            return true;
-        })
-        return false;
-    }
-
-    public unzipModpack(folder: string, modpack_name: string): Promise<boolean> {
-        log.info(`[MODPACK] <${modpack_name}> unzipping...`);
-        return new Promise(async (resolve, reject) => {
-            try {
-                this.status = 'unzipping';
-                let fldr = path.join(folder, 'modpack.zip');
-                await extract(fldr, { dir: folder });
-                let interval = setInterval(async () => {
-                    try {
-                        await this.clearModpackArchive(modpack_name);
-                        clearInterval(interval);
-                        resolve(true);
-                    } catch (err) { }
-                }, 1000)
-            } catch (err) {
-                log.error('Error occured while unpacking modpack...');
-                reject(err);
-            }
-        })
-    }
-
-    public async moveLibs(modpack_name: string): Promise<boolean> {
-        try {
-            let libs_version = this.modpacks[modpack_name].libs_version;
-            let modpack_path = this.modpacks[modpack_name].path;
-            log.info(`[MODPACK] <${modpack_name}> moving libs...`);
-
-            log.info('[MODPACK] Moving: libraries...');
-            if (!(await fs.pathExists(modpack_path + '\\libraries'))) {
-                await fs.ensureDir(modpack_path + '\\libraries');
-                await copyWithProgress(path.join(this.libs[libs_version].path, 'libraries'), path.join(modpack_path, 'libraries'),
-                    (progress: any) => {
-                        BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
-                            percent: progress.progress * 30
-                        });
-                    },
-                    250,
-                );
-            }
-            BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
-                percent: 30
-            });
-
-            log.info('[MODPACK] Moving: assets...');
-            if (!(await fs.pathExists(modpack_path + '\\assets'))) {
-                await fs.ensureDir(modpack_path + '\\assets');
-                await copyWithProgress(path.join(this.libs[libs_version].path, 'assets'), path.join(modpack_path, 'assets'),
-                    (progress: any) => {
-                        BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
-                            percent: 30 + (progress.progress * 35)
-                        });
-                    },
-                    250,
-                );
-            }
-
-            BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
-                percent: 65
-            });
-
-            log.info('[MODPACK] Moving: versions...');
-            if (!(await fs.pathExists(modpack_path + '\\versions'))) {
-                await fs.ensureDir(modpack_path + '\\versions');
-                await copyWithProgress(path.join(this.libs[libs_version].path, 'versions'), path.join(modpack_path, 'versions'),
-                    (progress: any) => {
-                        BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
-                            percent: 65 + (progress.progress * 35)
-                        });
-                    },
-                    250,
-                );
-            }
-
-            BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-progress', {
-                percent: 100
-            });
-            BrowserWindow.getAllWindows()[0]?.webContents.send('moving-libs-finished', modpack_name);
-            return true;
-        } catch (err) {
-            console.error(err)
-            return false;
-        }
-    }
-
-    public async getLibsPathsFromJson(): Promise<string[]> {
-        let pth = await this.ensureLibsDir('1.12');
-        let json = JSON.parse(fs.readFileSync(path.join(pth, 'versions', 'Forge-1.12.2', 'Forge-1.12.2.json')).toString())
-        let paths: string[] = [];
-        for (const lib_obj of json.libraries) {
-            if (lib_obj.classifies != undefined) {
-                let platform = os.platform();
-                let _pth = '';
-
-                if (platform == 'win32' && lib_obj.classifies['windows']) _pth = path.join(pth, 'libraries', lib_obj.classifies['windows'].path);
-                if (platform == 'darwin' && lib_obj.classifies['osx']) _pth = path.join(pth, 'libraries', lib_obj.classifies['osx'].path);
-                if (platform == 'linux' && lib_obj.classifies['linux']) _pth = path.join(pth, 'libraries', lib_obj.classifies['linux'].path);
-
-                if (await fs.pathExists(_pth)) paths.push(_pth)
-            }
-
-            if (lib_obj.artifact != undefined) {
-                let _pth = path.join(pth, 'libraries', lib_obj.artifact.path);
-                if (await fs.pathExists(_pth)) paths.push(_pth)
-            }
-        }
-
-        return paths;
+    constructor(root: string, modpackManager: ModpackManager, settingsStorage: SettingsStorage) {
+        this._settingsStorage = settingsStorage;
+        this._modpackManager = modpackManager;
+        this.root = root;
     }
 
     os_version = os.release().split(".")[0];
@@ -786,8 +738,8 @@ export class ModpackManager {
 
             BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-initializing', { modpack_name });
 
-            let game_dir = await this.ensureModpackDir(modpack_name);
-            let libs_dir = await this.ensureLibsDir('1.12');
+            let game_dir = await this._modpackManager.ensureModpackDir(modpack_name);
+            let libs_dir = await this._modpackManager.ensureLibsDir('1.12');
 
             BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-launching', { modpack_name });
 
@@ -800,7 +752,7 @@ export class ModpackManager {
             let base_command = `-Dos.name="Windows 10" -Dos.version="10.0" -Djava.library.path="${libs_dir}\\versions\\1.12.2-forge-14.23.5.2855\\natives" -cp "${libs_paths}" -Xmn${min_ram * 1024}M -Xmx${max_ram * 1024}M -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M -Dfml.ignoreInvalidMinecraftCertificates=true -Dfml.ignorePatchDiscrepancies=true -Djava.net.preferIPv4Stack=true -Dminecraft.applet.TargetDirectory="${game_dir}" net.minecraft.launchwrapper.Launch --username ${username} --version 1.12.2-forge-14.23.5.2855 --gameDir "${game_dir}" --assetsDir "${libs_dir}\\assets" --assetIndex 1.12 --uuid ${uuid} --accessToken null --userType mojang --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge --width 925 --height 530`
             base_command = this.integrate_java_parameters(base_command);
             let cd_path = game_dir;
-            let final_command = `${game_dir[0]}:&&cd "${cd_path}"&&"${java_path}" ${base_command}`;
+            let final_command = `${game_dir[0]}:&&cd "${cd_path}"&&"${java_path}" ${base_command.replace(uuid, '[redacted by chinese government]')}`;
 
             log.info(`[MODPACK] <${modpack_name}> final command: ${final_command}`);
             
@@ -952,5 +904,4 @@ export class ModpackManager {
 
         return command;
     }
-
 }

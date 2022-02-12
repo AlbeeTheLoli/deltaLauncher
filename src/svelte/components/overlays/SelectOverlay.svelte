@@ -48,7 +48,7 @@
     })
 </script>
 
-<div bind:this={el} class="overlay-thing" class:open={visible}>
+<div bind:this={el} class="overlay-thing" class:open={visible} class:reduced-motion={$global.settingsManager ? $global.settingsManager.settings.appearance.reduced_motion : false}>
     <div class="overlay-container">
         <h1>{h1}</h1>
         <p>{p}</p>

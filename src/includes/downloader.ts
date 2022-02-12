@@ -7,11 +7,12 @@ log.variables.label = 'downloader';
 log.transports.console.format = '{h}:{i}:{s} > [{label}] {text}';
 log.transports.file.format = '{h}:{i}:{s} > [{label}] {text}';
 
-export interface progress {
+export interface IProgress {
     percent: number,
     total_size: number,
     received_size: number,
     status: string,
+    from: 'downloader' | 'extract' | 'copy',
 }
 
 export class Downloader {
@@ -19,23 +20,27 @@ export class Downloader {
     path = '';
     threads = -1;
     paused = false;
-    progress: progress = {
+    status = 'idle';
+    progress: IProgress = {
         percent: -1,
         total_size: -1,
         received_size: -1,
-        status: 'idle',
+        status: this.status,
+        from: 'downloader',
     }
 
     public clearThreadFiles(path: string, threads: number) {
         for (let i = 0; i < threads; i++) {
-            if (fs.pathExistsSync(path + `\\downloadingthread${i}.thread`)) fs.unlinkSync(path + `\\downloadingthread${i}.thread`);
+            if (fs.pathExistsSync(path + `\\downloadingthread${i}.thread`)) {
+                fs.unlinkSync(path + `\\downloadingthread${i}.thread`)
+            };
         }
     }
 
     public cancel() {
-        this.downloading = false;
-        this.paused = false;
         return new Promise((resolve, reject) => {
+            this.status = 'cancel';
+
             if (this.progress_interval != undefined) {
                 clearInterval(this.progress_interval);
                 this.progress_interval = undefined;
@@ -52,13 +57,16 @@ export class Downloader {
             if (fs.pathExistsSync(`${this.path}\\modpack.zip`)) fs.unlinkSync(`${this.path}\\modpack.zip`);
 
             this.downloading = false;
+            this.paused = false;
             this.path = '';
             this.threads = -1;
+            this.status = 'idle';
             this.progress = {
                 percent: -1,
                 total_size: -1,
                 received_size: -1,
-                status: 'idle',
+                status: this.status,
+                from: 'downloader',
             }
             this.requests = [];
             resolve(true);
@@ -86,11 +94,13 @@ export class Downloader {
     //@ts-expect-error
     public async getInfo(url: string): {total_bytes: number} {
         let actual_attempts = 0; 
+        this.status = 'awaiting';
         this.progress = {
             percent: 0,
             received_size: 0,
             total_size: -1,
-            status: 'awaiting',
+            status: this.status,
+            from: 'downloader',
         }
         while (actual_attempts < 20) {
             actual_attempts++;;
@@ -148,7 +158,7 @@ export class Downloader {
     }
  
     requests: any[] = [];
-    public async createDownloadThread(start_bytes: number, finish_bytes: number, url: string, path: string, thread_num: number, onData: Function) {
+    public async createDownloadThread(start_bytes: number, finish_bytes: number, url: string, path: string, thread_num: number, onData: Function, onEnd: Function) {
         let thread_created_successfully = false;
         let thread_attempts = 0;
         while (!thread_created_successfully) {
@@ -163,7 +173,7 @@ export class Downloader {
             let received_bytes = 0;
             let total_bytes = 0;
 
-            await new Promise(async (resolve, reject) => {                
+            await new Promise(async (resolve, reject) => {
                 let req = request({
                     headers: {
                         Range: `bytes=${start_bytes}-${finish_bytes}`,
@@ -176,14 +186,18 @@ export class Downloader {
                 let out = fs.createWriteStream(path + "\\" + `downloadingthread${thread_num}.thread`);
                 req.pipe(out);
         
+                let lazythreadtimeout: NodeJS.Timeout | undefined = undefined;
                 req.on('response', (data) => {
                     //@ts-expect-error
                     total_bytes = parseInt(data.headers["content-length"]);
                     log.info(`[DOWNLOAD THREAD] <${thread_num}> Got response. Size: ${data.headers["content-length"]}`);
                     if (total_bytes != undefined && total_bytes > (finish_bytes - start_bytes) / 2) {
+                        log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread creation successfull. `);
                         this.requests.push(req);
                         thread_created_successfully = true;
+                        resolve('success');
                     } else {
+                        log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread is not responding... retrying... `);
                         reject("broken thread");
                         req.abort();
                         out.end();
@@ -192,18 +206,31 @@ export class Downloader {
 
                 req.on("data", function (chunk) {
                     // Update the received bytes
+                    received_bytes += chunk.length;
                     onData(chunk.length);
+                    if (chunk.length == 0) {
+                        if (lazythreadtimeout == undefined) {
+                            lazythreadtimeout = setTimeout(() => {
+                                log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread seems unresponsive...`);
+                            }, 5000)
+                        }
+                    } else {
+                        if (lazythreadtimeout)
+                            clearTimeout(lazythreadtimeout);
+                    }
                 });
 
                 req.on("end", function (data) {
                     req.abort();
-                    resolve('success');
+                    if (thread_created_successfully)
+                        onEnd();
                 });
 
             }).then((res) => {
                 return 'test';
             })
             .catch((err) => {
+                fs.unlinkSync(path + "\\" + `downloadingthread${thread_num}.thread`);
                 log.info(`[DOWNLOAD THREAD] <${thread_num}> broken thread`);
             });
         }
@@ -232,76 +259,84 @@ export class Downloader {
             let total_bytes = file_info.total_bytes;
             let threads_done = 0;
     
-            this.progress_interval = setInterval(() => {
-                if (this.paused) return;
-                this.progress = {
-                    percent: received_bytes / total_bytes,
-                    received_size: received_bytes,
-                    total_size: total_bytes,
-                    status: 'downloading',
-                }
-                onProgress(this.progress);
-            }, 1000)
-    
             for (let i = 0; i < threads; i++) {
                 let chunk_start = Math.floor((total_bytes / threads) * i);
                 if (i > 0) chunk_start++;
                 let chunk_finish = Math.floor((total_bytes / threads) * (i + 1));
     
-                this.createDownloadThread(chunk_start, chunk_finish, url, folder, i, (chunk_length: any) => {
-                    received_bytes += chunk_length;
-                }).then(async res => {
-                    log.info(`[DOWNLOAD THREAD] <${i}> thread done`);
-                    threads_done++;
-    
-                    if (threads_done == threads) {
-                        if (this.downloading) {
-                            log.info(`merging threads...`);
-    
-                            if (this.progress_interval != undefined) {
-                                clearInterval(this.progress_interval);
-                                this.progress_interval = undefined;
+                await this.createDownloadThread(chunk_start, chunk_finish, url, folder, i, 
+                    (chunk_length: any) => { // onprogress
+                        received_bytes += chunk_length;
+                    }, async () => { // onend
+                        log.info(`[DOWNLOAD THREAD] <${i}> thread done`);
+                        threads_done++;
+                        
+                        if (threads_done == threads) {
+                            if (this.downloading) {
+                                log.info(`merging threads...`);
+                            
+                                if (this.progress_interval != undefined) {
+                                    clearInterval(this.progress_interval);
+                                    this.progress_interval = undefined;
+                                }
+
+                                this.status = 'merging';
+                                this.progress = {
+                                    percent: 1,
+                                    received_size: total_bytes,
+                                    total_size: total_bytes,
+                                    status: this.status,
+                                    from: 'downloader',
+                                }
+                                onProgress(this.progress);
+                            
+                                const outputPath = folder + `\\${file_name}`;
+                            
+                                let inputPathList = [];
+                            
+                                //. Add Thread to Threads list
+                                for (let i = 0; i < threads; i++) {
+                                    inputPathList.push(folder + `\\downloadingthread${i}.thread`);
+                                }
+                            
+                                const status = await mergeFiles(inputPathList, outputPath);
+                                log.info(`files merged: ${status}`);
+                            
+                                this.status = 'idle';
+                                this.progress = {
+                                    percent: 1,
+                                    received_size: total_bytes,
+                                    total_size: total_bytes,
+                                    status: this.status,
+                                    from: 'downloader',
+                                }
+                                onProgress(this.progress);
+                            
+                                this.clearThreadFiles(folder, threads);
+                                log.info(`completed`);
+                                this.downloading = false;
+                                resolve(outputPath);
+                            } else {
+                                log.info(`canceled`);
+                                resolve('');
                             }
-    
-                            this.progress = {
-                                percent: 1,
-                                received_size: total_bytes,
-                                total_size: total_bytes,
-                                status: 'merging',
-                            }
-                            onProgress(this.progress);
-    
-                            const outputPath = folder + `\\${file_name}`;
-    
-                            let inputPathList = [];
-    
-                            //. Add Thread to Threads list
-                            for (let i = 0; i < threads; i++) {
-                                inputPathList.push(folder + `\\downloadingthread${i}.thread`);
-                            }
-    
-                            const status = await mergeFiles(inputPathList, outputPath);
-                            log.info(`files merged: ${status}`);
-    
-                            this.progress = {
-                                percent: 1,
-                                received_size: total_bytes,
-                                total_size: total_bytes,
-                                status: 'idle',
-                            }
-                            onProgress(this.progress);
-    
-                            this.clearThreadFiles(folder, threads);
-                            log.info(`completed`);
-                            this.downloading = false;
-                            resolve(outputPath);
-                        } else {
-                            log.info(`canceled`);
-                            resolve('');
                         }
                     }
-                });
+                )
             }
+
+            this.progress_interval = setInterval(() => {
+                if (this.paused) return;
+                this.status = 'download';
+                this.progress = {
+                    percent: received_bytes / total_bytes,
+                    received_size: received_bytes,
+                    total_size: total_bytes,
+                    status: this.status,
+                    from: 'downloader',
+                }
+                onProgress(this.progress);
+            }, 1000)
         })
     }
 }

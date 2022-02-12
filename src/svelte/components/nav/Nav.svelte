@@ -32,13 +32,17 @@
     }
 </script>
 
-<header>
+<header class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion}>
     <div id="header-nav" class="nav noselect">
         {#each section_names as _, i}
             <div class="nav-element" class:active={section == i} on:click={() => section = i}>{section_names[i]}</div>
         {/each}
     </div>
-    <div class="flex-filler drag"></div>
+    <div class="flex-filler drag" style="display: flex; align-items: center; padding-left: 16px">
+        {#if $global.settingsManager.settings.dev_mode}
+            <p>App state: {$global.state}</p>
+        {/if}
+    </div>
     <div class="profile">
         <div class="profile-picture">
             <img id="profile-picture-img" class="no-drag" src="D:/Pictures/Anime/Helltaker/0f0f99c00bdc40b5cc21f621bd4d8ac5.jpg" alt="">

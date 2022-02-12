@@ -10,10 +10,12 @@
     let max_ram = window.max_setable_ram;
     $: mem = $global.settingsManager.settings.modpack_settings.allocated_memory;
 
+    $: status = $global.state;
+
     let locked = false;
     $: _locked = ((max_ram < 6) || (max_ram - 6) < 0) ? (true) : ((states[btn_state].locked) ? true : locked);
     let paused = false;
-    $: btn_state = $global.state == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ($global.state == 'launched' ? 'launched' : 'play') : 'download');
+    $: btn_state = status == 'init-install' ? 'init-download' : status == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ($global.state == 'launched' ? 'launched' : 'play') : 'download');
     $: states = {
         'play': {
             h1: 'Играть',
@@ -25,7 +27,7 @@
                     h1: 'Удалить',
                     onclick: async () => {
                         console.log('Deintalling', $global.modpackManager.modpack)
-                        await $global.modpackManager.clearModpackDir($global.modpackManager.modpack);
+                        await $global.modpackManager.modpackInstaller.uninstallModpack($global.modpackManager.modpack);
                         await $global.modpackManager.updateModpackDirs();
                         $global.modpackManager.modpacks[$global.modpackManager.modpack].installed = false;
                     }
@@ -44,7 +46,7 @@
                 let modpack = $global.modpackManager.modpack;
 
                 console.log('checking env...');
-                await $global.modpackManager.ensureModpackEnvironment(modpack)
+                await $global.modpackManager.ensureModpack(modpack)
 
                 if ($global.modpackManager.addons.preferences.optifine) {
                     if ($global.modpackManager.addons.preferences.optifine.enabled) {
@@ -69,14 +71,17 @@
                     }
                 }
 
-                let res = await $global.modpackManager.launchModpack(
+                let res = await $global.modpackManager.processManager.launchModpack(
                     modpack, 
                     6,
                     $global.settingsManager.settings.modpack_settings.allocated_memory,
                     $global.authInterface.logged_user.login,
                     $global.authInterface.logged_user.uuid
                 );
-                $global.modpackManager.launched_modpacks = $global.modpackManager.launched_modpacks;
+                $global.modpackManager.processManager.launched_modpacks = $global.modpackManager.processManager.launched_modpacks;
+                $global.modpackManager.modpack = $global.modpackManager.modpack;
+                $global.modpackManager.status = 'launched';
+
 
                 switch (res) {
                     case 'launched':
@@ -92,6 +97,14 @@
             locked: true,
             sub_buttons: [
             ],
+        },
+
+        'init-download': {
+            h1: '',
+            p: 'Это может занять некоторое время...',
+            locked: true,
+            sub_buttons: [],
+            click: async () => {}
         },
 
         'download': {
@@ -112,14 +125,8 @@
             click: async () => {
                 let l_modpack = $global.modpackManager.modpack; // launching modpack
 
-                console.log('checking env...');
-                await $global.modpackManager.ensureModpackEnvironment(l_modpack)
-
                 console.log('downloading modpack:', l_modpack);
-                await $global.modpackManager.installModpack(l_modpack);
-
-                console.log('checking env...');
-                await $global.modpackManager.ensureModpackEnvironment(l_modpack)
+                await $global.modpackManager.ensureModpack(l_modpack);
             }
         },
 
@@ -133,8 +140,8 @@
                     h1: 'Отменить',
                     onclick: async () => {
                         console.log('cancelling download for:', $global.modpackManager.modpack)
-                        await $global.modpackManager.downloader.cancel();
-                        await $global.modpackManager.clearModpackDir($global.modpackManager.modpack);
+                        await $global.modpackManager.cancelCurrentDownload();
+                        await $global.modpackManager.modpackInstaller.uninstallModpack($global.modpackManager.modpack);
                         await $global.modpackManager.updateModpackDirs();
                         paused = false;
                         $global.modpackManager.modpack = $global.modpackManager.modpack;
@@ -159,8 +166,8 @@
                     h1: 'Отменить',
                     onclick: async () => {
                         console.log('cancelling download for:', $global.modpackManager.modpack)
-                        await $global.modpackManager.downloader.cancel();
-                        await $global.modpackManager.clearModpackDir($global.modpackManager.modpack);
+                        await $global.modpackManager.cancelCurrentDownload();
+                        await $global.modpackManager.modpackInstaller.uninstallModpack($global.modpackManager.modpack);
                         await $global.modpackManager.updateModpackDirs();
                         paused = false;
                         $global.modpackManager.modpack = $global.modpackManager.modpack;
@@ -175,72 +182,9 @@
             },
         },
     }
-
-    $global.ipcRenderer.on('modpack-initializing', (event, { modpack_name }) => {
-        locked = false;
-    });
-
-    $global.ipcRenderer.on('modpack-launching', (event, { modpack_name }) => {
-        locked = true;
-        global.overlay.show(`Запуск ${global.capitalizeFirstLetter(modpack_name)}`, 'Пожалуйста, не выключайте лаунчер.', true);
-    });
-
-    $global.ipcRenderer.on('modpack-launched', (event, { modpack_name }) => {
-        locked = false;
-        global.overlay.hide();
-    });
-
-    $global.ipcRenderer.on('modpack-exit', (event, { modpack_name, code, signal }) => {
-        $global.modpackManager.launched_modpacks = $global.modpackManager.launched_modpacks;
-        console.log(`<${modpack_name}>`, `exit [${code} ${signal}]`)
-        locked = false;
-    });
-
-    $global.ipcRenderer.on('modpack-error', (event, { modpack_name, code, signal }) => {
-        $global.modpackManager.launched_modpacks = $global.modpackManager.launched_modpacks;
-        console.log(`<${modpack_name}>`, `error [${code} ${signal}]`)
-        locked = false;
-    });
-
-    let _last_state: any;
-    global.subscribe((value) => {
-        if (_last_state != value.state || value.state == 'download') {
-            let state = value.state;
-            console.log(`changing state to: ${state}`)
-
-            switch (state) {
-                case 'idle':
-                    locked = false;
-                    break;
-                
-                case 'download':
-                    locked = false;
-                    break;
-                
-                case 'install':
-                    if ($global.modpackManager.downloader.progress.status == 'downloading') {
-                        locked = false;
-                    } else {
-                        locked = true;
-                    }
-
-                    break;
-            
-                case 'launched':
-                    locked = true;
-                    break;
-
-                default:
-                    locked = true;
-                    break;
-            }
-        }
-        _last_state = value.state;
-    })
-
 </script>
 
-<div class:download={$global.state == 'download'} class="main-button-wrapper">
+<div class:download={$global.modpackManager.status != 'idle'} class="main-button-wrapper">
     <DropMenu strict bind:locked={_locked} bind:h1={states[btn_state].h1} bind:p={states[btn_state].p} bind:menus={states[btn_state].sub_buttons} onclick={() => {
         if (!_locked) states[btn_state].click();
     }}/>
