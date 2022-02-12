@@ -192,12 +192,21 @@ export class Downloader {
                     total_bytes = parseInt(data.headers["content-length"]);
                     log.info(`[DOWNLOAD THREAD] <${thread_num}> Got response. Size: ${data.headers["content-length"]}`);
                     if (total_bytes != undefined && total_bytes > (finish_bytes - start_bytes) / 2) {
-                        log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread creation successfull. `);
-                        this.requests.push(req);
-                        thread_created_successfully = true;
-                        resolve('success');
+                        setTimeout(() => {
+                            if (received_bytes > 0) {
+                                log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread creation successfull. `);
+                                this.requests.push(req);
+                                thread_created_successfully = true;
+                                resolve('success');
+                            } else {
+                                log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread is not responding... retrying... `);
+                                reject("broken thread");
+                                req.abort();
+                                out.end();
+                            }
+                        }, 1000);
                     } else {
-                        log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread is not responding... retrying... `);
+                        log.info(`[DOWNLOAD THREAD] <${thread_num}> Empty response... retrying... `);
                         reject("broken thread");
                         req.abort();
                         out.end();
@@ -324,7 +333,7 @@ export class Downloader {
                     }
                 )
 
-                await new Promise((_resolve, reject) => { setTimeout(() => {_resolve(null)}, 1000) } );
+                await new Promise((_resolve, reject) => { setTimeout(() => {_resolve(null)}, 500) } );
             }
 
             this.progress_interval = setInterval(() => {
