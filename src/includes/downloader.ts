@@ -323,6 +323,8 @@ export class Downloader {
                         }
                     }
                 )
+
+                await new Promise((_resolve, reject) => { setTimeout(() => {_resolve(null)}, 1000) } );
             }
 
             this.progress_interval = setInterval(() => {

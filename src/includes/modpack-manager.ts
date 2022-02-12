@@ -676,12 +676,12 @@ class ModpackInstaller {
                     let dir = await this._modpackManager.ensureModpackDir(modpack);
                     let src = path.join(await this._modpackManager.ensureAddonsDir(), el.filename);
                     let dest = path.join(dir, 'mods', el.filename);
-                    log.info(`<${addon_name}> is enabled. adding:`, src, '->', dest);
+                    log.info(`<addon\\${addon_name}> is enabled. adding:`, src, '->', dest);
                     if (!(await fs.pathExists(dest))) {
-                        if (await fs.pathExists('')) await fs.copyFile(src, dest);
+                        if (await fs.pathExists(dest)) await fs.copyFile(src, dest);
                     }
                     for (const dependency of el.dependencies) {
-                        log.info('<'+addon_name+'>', 'adding dependency: ', dependency);
+                        log.info(`<addon\\${addon_name}> adding dependency: ${dependency}`);
                         let dependency_src = path.join(await this._modpackManager.ensureAddonsDir(), addons.dependencies[dependency].filename);
                         let dependency_dest = path.join(dir, 'mods', addons.dependencies[dependency].filename);
                         if (!(await fs.pathExists(dependency_dest))) await fs.copyFile(dependency_src, dependency_dest);
@@ -689,12 +689,12 @@ class ModpackInstaller {
                 } else {
                     let dir = await this._modpackManager.ensureModpackDir(modpack);
                     let dest = path.join(dir, 'mods', el.filename);
-                    log.info(`<${addon_name}> is disabled. removing:`, dest);
+                    log.info(`<addon\\${addon_name}> is disabled. removing:`, dest);
                     if (await fs.pathExists(dest)) {
                         await fs.unlink(dest);
                     }
                     for (const dependency of el.dependencies) {
-                        log.info('<'+addon_name+'>', 'removing dependency: ', dependency);
+                        log.info(`<addon\\${addon_name}> removing dependency: ${dependency}`);
                         let dependency_pth = path.join(dir, 'mods', addons.dependencies[dependency].filename);
                         if (await fs.pathExists(dependency_pth)) await fs.unlink(dependency_pth);
                     }
