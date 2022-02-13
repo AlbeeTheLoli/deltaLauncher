@@ -81,12 +81,12 @@ import Settings from '../../src/sections/Settings.svelte';
             {#if downloading}
                 {#if status == 'init-install'}
                     <h1>Подготовка к загрузке{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}...</h1>
-                    <p>Ожидание ответа сервера...</p>
+                    <p>Ожидание ответа сервера: [фаза {$global.download_progress.on_thread + 1} из {$global.download_progress.threads}]... </p>
                 {:else if status == 'download'}
                     <h1>Скачивание{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}...</h1>
                     {#if paused}
                         <p>Пауза</p>
-                    {:else if $global.download_progress.speed}
+                    {:else if $global.download_progress.speed != undefined}
                         <p>Скорость: {$global.download_progress.speed.toPrecision(2)} Мб в секунду</p>
                     {:else}
                         <p>Загрузка...</p>

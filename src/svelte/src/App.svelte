@@ -67,6 +67,8 @@
 			$global.download_progress = {
 				...progress,
 				speed: (speed && (speed != NaN)) ? speed : 0,
+				on_thread: $global.modpackManager.downloader.on_thread,
+				threads: $global.modpackManager.downloader.threads,
 			};
 			last_received_bytes = progress.received_size;
 		});

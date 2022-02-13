@@ -21,6 +21,7 @@ export class Downloader {
     threads = -1;
     paused = false;
     status = 'idle';
+    on_thread = 0;
     progress: IProgress = {
         percent: -1,
         total_size: -1,
@@ -94,7 +95,6 @@ export class Downloader {
     //@ts-expect-error
     public async getInfo(url: string): {total_bytes: number} {
         let actual_attempts = 0; 
-        this.status = 'awaiting';
         this.progress = {
             percent: 0,
             received_size: 0,
@@ -195,6 +195,7 @@ export class Downloader {
                         setTimeout(() => {
                             if (received_bytes > 0) {
                                 log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread creation successfull. `);
+                                this.on_thread++;
                                 this.requests.push(req);
                                 thread_created_successfully = true;
                                 resolve('success');
@@ -252,11 +253,13 @@ export class Downloader {
                 log.info(`download in progress.`)
                 reject();
             }
+            this.on_thread = 0;
             this.downloading = true;
             this.path = folder;
             this.threads = threads;
             log.info(`initiating threaded download with '${threads}' threads from '${url}' to ${folder}`)
-    
+            this.status = 'awaiting';
+
             let file_info = await this.getInfo(url);
     
             if (file_info == null) {
@@ -267,6 +270,18 @@ export class Downloader {
             let received_bytes = 0;
             let total_bytes = file_info.total_bytes;
             let threads_done = 0;
+
+            this.progress_interval = setInterval(() => {
+                if (this.paused) return;
+                this.progress = {
+                    percent: received_bytes / total_bytes,
+                    received_size: received_bytes,
+                    total_size: total_bytes,
+                    status: this.status,
+                    from: 'downloader',
+                }
+                onProgress(this.progress);
+            }, 1000)
     
             for (let i = 0; i < threads; i++) {
                 let chunk_start = Math.floor((total_bytes / threads) * i);
@@ -336,18 +351,7 @@ export class Downloader {
                 await new Promise((_resolve, reject) => { setTimeout(() => {_resolve(null)}, 500) } );
             }
 
-            this.progress_interval = setInterval(() => {
-                if (this.paused) return;
-                this.status = 'download';
-                this.progress = {
-                    percent: received_bytes / total_bytes,
-                    received_size: received_bytes,
-                    total_size: total_bytes,
-                    status: this.status,
-                    from: 'downloader',
-                }
-                onProgress(this.progress);
-            }, 1000)
+            this.status = 'download';
         })
     }
 }

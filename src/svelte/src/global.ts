@@ -31,7 +31,11 @@ function createGlobal() {
             total_size: 0,
             received_size: 0,
             status: 'idle',
-        } as IProgress & {speed: number},
+        } as IProgress & {
+            speed: number,
+            on_thread: number,
+            threads: number,
+        },
     });
 
     let obj = {
