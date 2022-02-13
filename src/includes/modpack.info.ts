@@ -74,7 +74,7 @@ export const ADDONS_INFO: { mods: { [key: string]: IAddonInfo }, dependencies: {
             display_name: 'JEI',
             default_enabled: true,
             filename: 'jei_1.12.2-4.16.1.302.jar',
-            link: 'https://github.com/Ektadelta/Addition/blob/main/mods/jei/jei_1.12.2-4.16.1.302.jar',
+            link: 'https://github.com/Ektadelta/Addition/raw/main/mods/jei/jei_1.12.2-4.16.1.302.jar',
             dependencies: [ 'jeiThaumic', 'jeiBees', 'jeiIntegration', 'jeiHarvestcraft', 'jeiVillagers', 'jeiTinker', 'jeiResources' ],
             incompatable_modpacks: [ ],
         },
