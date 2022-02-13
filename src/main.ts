@@ -11,10 +11,6 @@ log.transports.file.format = '{h}:{i}:{s} > [{label}] {text}';
 
 let mainWindow: BrowserWindow;
 
-if (require("electron-squirrel-startup")) {
-    app.quit();
-}
-
 async function main() {
     mainWindow = await openStartWindow();
 };
@@ -136,7 +132,7 @@ Object.defineProperty(global, 'autoUpdater', {
 
 
 function getRoot() {
-    let root_dir = 'C:\\Users\\Loli\\AppData\\Roaming\\.delta';
+    let root_dir = path.join(app.getPath('appData'), '.delta');
     fs.ensureDirSync(root_dir);
     return root_dir;
 }
