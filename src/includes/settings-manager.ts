@@ -20,7 +20,7 @@ const settings_pattern = {
     selected_user: -1,
     auto_go_to_server_thing: false,
     version: "",
-    download_threads: 2,
+    download_threads: 8,
     modpack_settings: {
         allocated_memory: 8,
         optimization_level: 2,
@@ -228,6 +228,18 @@ export class SettingsInterface {
     }
 
     public set root(_) {return}
+
+    public get settings_path() {
+        return path.normalize(this._settings_path);
+    }
+
+    public set settings_path(_) {return}
+
+    public get logs_path() {
+        return path.normalize(path.join(log.transports.file.getFile().path, '../'));
+    }
+
+    public set logs_path(_) {return}
 
     public get settings() {
         fs.ensureFileSync(this._settings_path);

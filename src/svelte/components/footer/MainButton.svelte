@@ -15,7 +15,7 @@
     let locked = false;
     $: _locked = ((max_ram < 6) || (max_ram - 6) < 0) ? (true) : ((states[btn_state].locked) ? true : locked);
     let paused = false;
-    $: btn_state = status == 'init-install' ? 'init-download' : status == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ($global.state == 'launched' ? 'launched' : 'play') : 'download');
+    $: btn_state = (status == 'unzipping' || status == 'post-install' || status == 'ensure-env' || status == 'moving-libs') ? 'post-download' : status == 'init-install' ? 'init-download' : status == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ($global.state == 'launched' ? 'launched' : 'play') : 'download');
     $: states = {
         'play': {
             h1: 'Играть',
@@ -125,8 +125,17 @@
                 let l_modpack = $global.modpackManager.modpack; // launching modpack
 
                 console.log('downloading modpack:', l_modpack);
-                await $global.modpackManager.ensureModpack(l_modpack);
+                let installed = await $global.modpackManager.ensureModpack(l_modpack);
+                $global.modpackManager.modpacks[l_modpack].installed = installed;
             }
+        },
+
+        'post-download': {
+            h1: 'Завершение...',
+            p: 'Пожалуйста не закрывайте лаунчер...',
+            locked: true,
+            sub_buttons: [],
+            click: async () => {}
         },
 
         'downloading': {

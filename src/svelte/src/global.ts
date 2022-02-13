@@ -43,7 +43,6 @@ function createGlobal() {
         set,
         update,
         capitalizeFirstLetter,
-        LOADING_SPAN: '<span class="loading"><p>.</p><p>.</p><p>.</p></span>',
         shell: {
             showItemInFolder: async (path: string) => {},
             openPath: async (path: string) => {},

@@ -136,6 +136,21 @@
             <p class="just-button" on:click={() => {
                 if ($global.settingsManager.root) global.shell.openPath($global.settingsManager.root);
             }}>Открыть корневую папку</p>
+            <div class="smoll-gap"></div>
+            <div class="smoll-gap"></div>
+            <p class="just-button" on:click={() => {
+                if ($global.settingsManager.settings_path) global.shell.showItemInFolder($global.settingsManager.settings_path);
+            }}>Открыть файл настроек</p>
+            <div class="smoll-gap"></div>
+            <div class="smoll-gap"></div>
+            <p class="just-button" on:click={() => {
+                if ($global.settingsManager.logs_path) global.shell.openPath($global.settingsManager.logs_path);
+            }}>Открыть папку с логами</p>
+            <div class="smoll-gap"></div>
+            <div class="smoll-gap"></div>
+            <p class="just-button" on:click={() => {
+                if ($global.settingsManager.themes_path) global.shell.openPath($global.settingsManager.themes_path);
+            }}>Открыть папку с темами</p>
             <div class="big-gap"></div>
             <Checkbox label="Убрать анимации" bind:checked={$global.settingsManager.settings.appearance.reduced_motion}></Checkbox>
             <div class="smoll-gap"></div>
@@ -151,9 +166,9 @@
                 <div class="smoll-gap"></div>
             {/if}
         </Setting>
-        <Setting title='Производительность клиента' bordered={false}>
+        <Setting title='Тема' bordered={false}>
             
-
+            
         </Setting>
         {#if $global.settingsManager.settings.dev_mode}
             <Setting title='Экспериментальная ветка'>
@@ -189,14 +204,14 @@
     p {
         font-size: 14px;
         font-weight: 600;
-        opacity: .48;
+        opacity: .64;
     }
 
     .just-button {
         cursor: pointer;
         color: var(--main-text);
         font-size: 15px;
-        opacity: .48;
+        opacity: .64;
         font-weight: 600;
 
         transition: opacity .32s cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -247,7 +262,7 @@
         left: 0;
         font-size: 12px;
         font-weight: 700;
-        opacity: .32;
+        opacity: .48;
 
         transition: all .32s cubic-bezier(0.165, 0.84, 0.44, 1);
     }

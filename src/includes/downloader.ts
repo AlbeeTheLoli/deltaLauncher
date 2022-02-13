@@ -195,14 +195,13 @@ export class Downloader {
                         setTimeout(() => {
                             if (received_bytes > 0) {
                                 log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread creation successfull. `);
-                                this.on_thread++;
                                 this.requests.push(req);
                                 thread_created_successfully = true;
 
                                 if (received_bytes == total_bytes) {
                                     onEnd();
                                 }
-                                
+
                                 resolve('success');
                             } else {
                                 log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread is not responding... retrying... `);
@@ -299,6 +298,7 @@ export class Downloader {
                     }, async () => { // onend
                         log.info(`[DOWNLOAD THREAD] <${i}> thread done`);
                         threads_done++;
+                        this.on_thread = threads_done + 1;
                         
                         if (threads_done == threads) {
                             if (this.downloading) {

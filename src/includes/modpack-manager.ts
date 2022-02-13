@@ -577,13 +577,13 @@ class ModpackInstaller {
                 if (await fs.pathExists(archive)) await fs.unlink(archive)
 
                 log.info(`[MODPACK] <modpack\\${modpack_name}> installed`);
-                this._modpackManager.status = 'idle';
+                this._modpackManager.status = 'post-install';
                 this.cancelled = false;
                 this.busy = false;
                 return true;
             } catch (err) {
                 log.error(`[MODPACK] <modpack\\${modpack_name}> error occured while unpacking ${modpack_name}...`);
-                this._modpackManager.status = 'idle';
+                this._modpackManager.status = 'post-install';
                 this.cancelled = false;
                 this.busy = false;
                 return false;
@@ -591,6 +591,7 @@ class ModpackInstaller {
         }
 
         log.info(`[MODPACK] <modpack\\${modpack_name}> already installed`);
+        this._modpackManager.status = 'post-install';
         this.cancelled = false;
         this.busy = false;
         return true;
@@ -627,9 +628,13 @@ class ModpackInstaller {
         let dir = await this._modpackManager.ensureAddonsDir();
         let pth = path.join(dir, addon.filename);
 
+        this._modpackManager.status = 'init-install';
+        this._modpackManager.downloading_item = addon.display_name;
+
         if (ADDONS_INFO.dependencies[addon_name] || this._modpackManager.addons.preferences[addon_name].enabled) {
             if (await fs.pathExists(pth)) {
                 log.info(`<${addon_name}> exists. no need to download`);
+                this._modpackManager.status = 'post-install';
                 return true;
             } else {
                 log.info(`<${addon_name}> doesn't exist. downloading....`);
@@ -642,6 +647,7 @@ class ModpackInstaller {
                     }
                 }
 
+                this._modpackManager.status = 'init-install';
                 let downloaded_path = await this._downloader.download(dir, addon.link, addon.filename, 1, (progress) => {
                     if (this._downloader.paused) return false;
                     if (this._downloader.downloading && progress.status == 'download')
@@ -652,8 +658,11 @@ class ModpackInstaller {
 
                 if (downloaded_path == '') {
                     log.info(`[MODPACK] <${addon_name}> download cancelled`);
+                    this._modpackManager.status = 'idle';
                     return false;
                 }
+
+                this._modpackManager.status = 'post-install';
                 return true;
             }
         }
