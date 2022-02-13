@@ -136,21 +136,19 @@
             <p class="just-button" on:click={() => {
                 if ($global.settingsManager.root) global.shell.openPath($global.settingsManager.root);
             }}>Открыть корневую папку</p>
-            <div class="smoll-gap"></div>
-            <div class="smoll-gap"></div>
+            <div class="gap"></div>
             <p class="just-button" on:click={() => {
                 if ($global.settingsManager.settings_path) global.shell.showItemInFolder($global.settingsManager.settings_path);
             }}>Открыть файл настроек</p>
-            <div class="smoll-gap"></div>
-            <div class="smoll-gap"></div>
+            <div class="gap"></div>
             <p class="just-button" on:click={() => {
                 if ($global.settingsManager.logs_path) global.shell.openPath($global.settingsManager.logs_path);
             }}>Открыть папку с логами</p>
-            <div class="smoll-gap"></div>
-            <div class="smoll-gap"></div>
+            <div class="gap"></div>
             <p class="just-button" on:click={() => {
                 if ($global.settingsManager.themes_path) global.shell.openPath($global.settingsManager.themes_path);
             }}>Открыть папку с темами</p>
+            <div class="big-gap"></div>
             <div class="big-gap"></div>
             <Checkbox label="Убрать анимации" bind:checked={$global.settingsManager.settings.appearance.reduced_motion}></Checkbox>
             <div class="smoll-gap"></div>
@@ -167,8 +165,9 @@
             {/if}
         </Setting>
         <Setting title='Тема' bordered={false}>
-            
-            
+            <Checkbox label="Темная тема" bind:checked={$global.settingsManager.settings.appearance.default_dark_theme} onchange={() => {
+                $global.settingsManager.theme = $global.settingsManager.settings.appearance.default_dark_theme ? ':dark:' : ''
+            }}></Checkbox>
         </Setting>
         {#if $global.settingsManager.settings.dev_mode}
             <Setting title='Экспериментальная ветка'>

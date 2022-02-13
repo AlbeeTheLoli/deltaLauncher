@@ -34,6 +34,8 @@
 		//@ts-expect-error
 		$global.modpackManager = window.modpackManager;
 		//@ts-expect-error
+		$global.state = window.modpackManager.status;
+		//@ts-expect-error
 		$global.settingsManager = window.settingsInterface;
 		//@ts-expect-error
 		$global.ipcRenderer = window.ipcRenderer
@@ -71,7 +73,10 @@
 				threads: $global.modpackManager.downloader.threads,
 			};
 			last_received_bytes = progress.received_size;
-		});
+		}); 
+
+		$global.modpackManager.modpack = $global.modpackManager.modpack;
+		$global.modpackManager.status = $global.modpackManager.status;
 
 		loaded = true;
 	})
@@ -108,7 +113,7 @@
 			</g>
 		</svg>              
 	</div>
-	<div id="app-reload" class="reload no-drag">
+	<div id="app-reload" class="reload no-drag" class:locked={$global.state != 'idle'}>
 		<svg xmlns="http://www.w3.org/2000/svg" width="11.99" height="11.713" viewBox="0 0 11.99 11.713">
 			<path id="Path_232" data-name="Path 232" d="M2053.858,1818.992a5.84,5.84,0,0,1-8.28,0c-.009-.009-.018-.027-.027-.036l-.82.82a.674.674,0,0,1-1.153-.477v-2.9a.681.681,0,0,1,.676-.676h2.9a.676.676,0,0,1,.477,1.153l-.82.82c.009.009.027.018.036.027a4.05,4.05,0,1,0,0-5.739.9.9,0,0,1-1.271-1.27,5.862,5.862,0,0,1,8.28,0A5.868,5.868,0,0,1,2053.858,1818.992Z" transform="translate(-2043.578 -1809)" fill="var(--app-icon-clr)"/>
 		</svg>

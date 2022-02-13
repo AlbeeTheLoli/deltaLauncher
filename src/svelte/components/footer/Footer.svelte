@@ -80,10 +80,10 @@
         <div class="info">
             {#if downloading}
                 {#if status == 'init-install'}
-                    <h1>Подготовка к загрузке{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}<Loading /></h1>
-                    <p>Ожидание ответа сервера: [фаза {$global.download_progress.on_thread + 1} из {$global.download_progress.threads}]<Loading /></p>
+                    <h1>Подготовка к загрузке{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toPrecision(2)}%)<Loading /></h1>
+                    <p>Ожидание ответа сервера: [фаза {$global.download_progress.on_thread + 1} из {$global.download_progress.threads}] ({($global.download_progress.percent * 100).toPrecision(2)}%)<Loading /></p>
                 {:else if status == 'download'}
-                    <h1>Скачивание{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}<Loading /></h1>
+                    <h1>Скачивание{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toPrecision(2)}%)<Loading /></h1>
                     {#if paused}
                         <p>Пауза</p>
                     {:else if $global.download_progress.speed != undefined}
@@ -92,7 +92,7 @@
                         <p>Загрузка<Loading /></p>
                     {/if}
                 {:else}
-                    <h1>Установка{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'}<Loading /></h1>
+                    <h1>Установка{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toPrecision(2)}%)</h1>
                     {#if status == 'unzipping'}
                         <p>Распаковка архива<Loading /> </p>
                     {:else if status == 'moving-libs'}

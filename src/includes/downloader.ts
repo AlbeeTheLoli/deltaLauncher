@@ -277,6 +277,7 @@ export class Downloader {
 
             this.progress_interval = setInterval(() => {
                 if (this.paused) return;
+                this.on_thread = Math.max(this.requests.length, threads - 1);
                 this.progress = {
                     percent: received_bytes / total_bytes,
                     received_size: received_bytes,
@@ -298,7 +299,6 @@ export class Downloader {
                     }, async () => { // onend
                         log.info(`[DOWNLOAD THREAD] <${i}> thread done`);
                         threads_done++;
-                        this.on_thread = threads_done + 1;
                         
                         if (threads_done == threads) {
                             if (this.downloading) {
@@ -341,6 +341,7 @@ export class Downloader {
                                 }
                                 onProgress(this.progress);
                             
+                                this.requests = [];
                                 this.clearThreadFiles(folder, threads);
                                 log.info(`completed`);
                                 this.downloading = false;

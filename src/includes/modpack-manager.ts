@@ -683,7 +683,7 @@ class ModpackInstaller {
                     let dest = path.join(dir, 'mods', el.filename);
                     log.info(`<addon\\${addon_name}> is enabled. adding:`, src, '->', dest);
                     if (!(await fs.pathExists(dest))) {
-                        if (await fs.pathExists(dest)) await fs.copyFile(src, dest);
+                        await fs.copyFile(src, dest);
                     }
                     for (const dependency of el.dependencies) {
                         log.info(`<addon\\${addon_name}> adding dependency: ${dependency}`);

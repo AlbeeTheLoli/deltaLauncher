@@ -135,6 +135,11 @@ input {
     transition: background-color .2s;
 }
 
+.app-frame > .reload.locked {
+    opacity: .32;
+    cursor: not-allowed;
+}
+
 .app-frame > .reload:hover {
     background: rgba(var(--text-primary-rgb), .16);
 

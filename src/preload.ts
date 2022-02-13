@@ -137,7 +137,8 @@ ipcRenderer.on('window-id', (_, arg) => {
 window.onbeforeload = () => {
     console.log('preloading... <<<');
 
-    settingsInterface.theme = settingsInterface.settings.appearance.theme;
+    settingsInterface.theme = settingsInterface.settings.appearance.default_dark_theme ? ':dark:' : '';
+    // settingsInterface.theme = settingsInterface.settings.appearance.theme;
     settingsInterface.bg = settingsInterface.settings.appearance.bg;
     settingsInterface.filter_opacity = settingsInterface.settings.appearance.filter_opacity;
     settingsInterface.blur_amount = settingsInterface.settings.appearance.blur_amount;
@@ -165,6 +166,9 @@ window.onload = async () => {
         console.log('exiting');
         settingsInterface.saveSync();
         //@ts-expect-error
+        window.modpackManager.downloader.cancel();
+
+        //@ts-expect-error
         window.browserWindow.exit();
     });
 
@@ -174,6 +178,10 @@ window.onload = async () => {
     });
 
     document.getElementById('app-reload')?.addEventListener('click', async () => {
+        if (document.getElementById('app-reload') && document.getElementById('app-reload')?.classList.contains('locked')) {
+            return;
+        }
+
         settingsInterface.saveSync();
         console.log('reloading');
         
@@ -181,9 +189,7 @@ window.onload = async () => {
         window.modpackManager.updateModpackDirs();
         //@ts-expect-error
         window.settingsInterface.updateThemesList()
-
-        //@ts-expect-error
-        window.modpackManager.downloader.cancel();
+        
         //@ts-expect-error
         window.browserWindow.reload();
     });
@@ -193,9 +199,6 @@ window.onload = async () => {
 
     window.addEventListener('beforeunload', (ev) => {
         console.log('unloading... <<<');
-
-        //@ts-expect-error
-        window.modpackManager.downloader.cancel();
 
         console.log('byee~~ sussy baka~ :)');
     });

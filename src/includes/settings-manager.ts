@@ -47,6 +47,7 @@ const settings_pattern = {
         },
     },
     appearance: {
+        default_dark_theme: false,
         reduced_motion: false,
         bg: "",
         theme: "",
@@ -168,6 +169,20 @@ export class SettingsStorage {
                     
                     console.warn(err);
                 }
+            }
+        }
+
+        //. Add default dark theme
+
+        this._themes = {
+            ...this._themes,
+            ':dark:': {
+                name: 'dark-default',
+                author: 'Albee',
+                version: '1.0.0',
+                description: 'Dark variant of default theme',
+                default_bg: 'https://cdn.discordapp.com/attachments/726363070594809897/941398770875240498/Screenshot_2022-02-10_212058.png',
+                path: '../default-dark.theme.css',
             }
         }
     }
