@@ -1,8 +1,8 @@
 {
-  "name": "electronsvelte",
-  "productName": "electronsvelte",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "name": "delta",
+  "productName": "Delta",
+  "version": "0.0.1",
+  "description": "Launcher for minecraft project Delta",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc && cd src/svelte && npm run build",
@@ -25,7 +25,10 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "electronsvelte"
+            "name": "Delta Installer",
+            "oneClick": false,
+            "perMachine": false,
+            "allowToChangeInstallationDirectory": true
           }
         },
         {

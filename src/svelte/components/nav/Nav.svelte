@@ -1,6 +1,7 @@
 <script lang='ts'>
     import type { user } from '../../../includes/auth-manager'
     import { global } from '../../src/global';
+import ProfilePicture from './ProfilePicture.svelte';
 
     export let userData: user;
 
@@ -45,7 +46,7 @@
     </div>
     <div class="profile">
         <div class="profile-picture">
-            <img id="profile-picture-img" class="no-drag" src="D:/Pictures/Anime/Helltaker/0f0f99c00bdc40b5cc21f621bd4d8ac5.jpg" alt="">
+            <ProfilePicture />
         </div>
         <div class="profile-info">
             <h1 id="profile-login-el">{userData.login}</h1>
@@ -116,12 +117,6 @@
         margin-right: 32px;
     }
 
-    .profile > .profile-picture > img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
     .profile > .profile-info {
         color: var(--header-profile-text);
         z-index: 10;
