@@ -136,7 +136,7 @@ Object.defineProperty(global, 'autoUpdater', {
 
 
 function getRoot() {
-    let root_dir = 'D:\\Games\\Delta\\launcher';
+    let root_dir = 'C:\\Users\\Loli\\AppData\\Roaming\\.delta';
     fs.ensureDirSync(root_dir);
     return root_dir;
 }
