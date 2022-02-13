@@ -46,7 +46,7 @@
                 let modpack = $global.modpackManager.modpack;
 
                 console.log('checking env...');
-                await $global.modpackManager.ensureModpack(modpack)
+                await $global.modpackManager.ensureModpack(modpack);
 
                 if ($global.modpackManager.addons.preferences.optifine) {
                     if ($global.modpackManager.addons.preferences.optifine.enabled) {
@@ -80,7 +80,6 @@
                 );
                 $global.modpackManager.processManager.launched_modpacks = $global.modpackManager.processManager.launched_modpacks;
                 $global.modpackManager.modpack = $global.modpackManager.modpack;
-                $global.modpackManager.status = 'launched';
 
 
                 switch (res) {
@@ -182,6 +181,40 @@
             },
         },
     }
+
+    $global.ipcRenderer.on('modpack-initializing', (event, { modpack_name }) => {
+        locked = false;
+    });
+
+    $global.ipcRenderer.on('modpack-launching', (event, { modpack_name }) => {
+        locked = true;
+        $global.modpackManager.modpack = $global.modpackManager.modpack;
+        $global.modpackManager.status = $global.modpackManager.status;
+        global.overlay.show(`Запуск ${global.capitalizeFirstLetter(modpack_name)}`, 'Пожалуйста, не выключайте лаунчер.', true);
+    });
+
+    $global.ipcRenderer.on('modpack-launched', (event, { modpack_name }) => {
+        locked = false;
+        $global.modpackManager.modpack = $global.modpackManager.modpack;
+        $global.modpackManager.status = $global.modpackManager.status;
+        global.overlay.hide();
+    });
+
+    $global.ipcRenderer.on('modpack-exit', (event, { modpack_name, code, signal }) => {
+        $global.modpackManager.processManager.launched_modpacks = $global.modpackManager.processManager.launched_modpacks;
+        $global.modpackManager.modpack = $global.modpackManager.modpack;
+        $global.modpackManager.status = $global.modpackManager.status;
+        console.log(`<${modpack_name}>`, `exit [${code} ${signal}]`)
+        locked = false;
+    });
+
+    $global.ipcRenderer.on('modpack-error', (event, { modpack_name, code, signal }) => {
+        $global.modpackManager.processManager.launched_modpacks = $global.modpackManager.processManager.launched_modpacks;
+        $global.modpackManager.modpack = $global.modpackManager.modpack;
+        $global.modpackManager.status = $global.modpackManager.status;
+        console.log(`<${modpack_name}>`, `error [${code} ${signal}]`)
+        locked = false;
+    });
 </script>
 
 <div class:download={$global.modpackManager.status != 'idle'} class="main-button-wrapper">

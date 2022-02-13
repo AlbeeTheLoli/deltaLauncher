@@ -198,6 +198,11 @@ export class Downloader {
                                 this.on_thread++;
                                 this.requests.push(req);
                                 thread_created_successfully = true;
+
+                                if (received_bytes == total_bytes) {
+                                    onEnd();
+                                }
+                                
                                 resolve('success');
                             } else {
                                 log.info(`[DOWNLOAD THREAD] <${thread_num}> Thread is not responding... retrying... `);

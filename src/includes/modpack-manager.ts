@@ -51,10 +51,9 @@ export class ModpackManager {
 
     public sha = '';
     private _status: TStatus = 'idle';
-    private _currentModpackLaunched = false;
     public set status(to: TStatus) {
-        this._status = this._currentModpackLaunched ? 'launched' : to;
-        BrowserWindow.getAllWindows()[0].webContents.send('modpack-manager-status-changed', { to })
+        this._status = to;
+        BrowserWindow.getAllWindows()[0].webContents.send('modpack-manager-status-changed', { to: (this.processManager.launched_modpacks[to]!=undefined ? 'launched' : to) })
     }
 
     public get status() {
@@ -66,11 +65,6 @@ export class ModpackManager {
     public set modpack(to: any) {
         this._selected_modpack = to;
         this._settingsStorage.settings.on_modpack = to;
-        if (this.processManager.launched_modpacks[to]) {
-            this._currentModpackLaunched = true;
-        } else {
-            this._currentModpackLaunched = false;
-        }
         this.status = this.status;
     }
 
@@ -445,7 +439,7 @@ class ModpackInstaller {
                 this._modpackManager.status = 'unzipping';
 
                 await extractWithProgress(archive, folder, (progress) => {
-                    log.info(`[MODPACK] <libs\\${version}> unzipping: ${progress.total_size / progress.received_size}`);
+                    log.info(`[MODPACK] <libs\\${version}> unzipping: ${progress.percent}`);
                     BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-download-progress', progress);
                 }, 250);
                 log.info(`[MODPACK] <libs\\${version}> unzipped`);
@@ -573,7 +567,7 @@ class ModpackInstaller {
                 this._modpackManager.status = 'unzipping';
 
                 await extractWithProgress(archive, folder, (progress) => {
-                    log.info(`[MODPACK] <modpack\\${modpack_name}> unzipping: ${progress.received_size / progress.received_size}`);
+                    log.info(`[MODPACK] <modpack\\${modpack_name}> unzipping: ${progress.percent}`);
                     BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-download-progress', progress);
                 }, 250);
                 log.info(`[MODPACK] <modpack\\${modpack_name}> unzipped`);
@@ -648,11 +642,13 @@ class ModpackInstaller {
                     }
                 }
 
-                let downloaded_path = await this._downloader.download(dir, addon.link, addon.filename, 2, (progress) => {
+                let downloaded_path = await this._downloader.download(dir, addon.link, addon.filename, 1, (progress) => {
                     if (this._downloader.paused) return false;
+                    if (this._downloader.downloading && progress.status == 'download')
+                        this._modpackManager.status = 'download';
                     log.info(progress.percent.toPrecision(2), progress.status);
                     BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-manager-download-progress', progress);
-                })
+                });
 
                 if (downloaded_path == '') {
                     log.info(`[MODPACK] <${addon_name}> download cancelled`);
@@ -797,6 +793,7 @@ class ProcessManager {
                     process: process,
                 }
             }
+            this._modpackManager.status = 'idle';
         })
     }
 
