@@ -682,14 +682,14 @@ class ModpackInstaller {
                     let src = path.join(await this._modpackManager.ensureAddonsDir(), el.filename);
                     let dest = path.join(dir, 'mods', el.filename);
                     log.info(`<addon\\${addon_name}> is enabled. adding:`, src, '->', dest);
-                    if (!(await fs.pathExists(dest))) {
+                    if ((await fs.pathExists(path.join(dir, 'mods'))) && !(await fs.pathExists(dest))) {
                         await fs.copyFile(src, dest);
                     }
                     for (const dependency of el.dependencies) {
                         log.info(`<addon\\${addon_name}> adding dependency: ${dependency}`);
                         let dependency_src = path.join(await this._modpackManager.ensureAddonsDir(), addons.dependencies[dependency].filename);
                         let dependency_dest = path.join(dir, 'mods', addons.dependencies[dependency].filename);
-                        if (!(await fs.pathExists(dependency_dest))) await fs.copyFile(dependency_src, dependency_dest);
+                        if ((await fs.pathExists(path.join(dir, 'mods'))) && !(await fs.pathExists(dependency_dest))) await fs.copyFile(dependency_src, dependency_dest);
                     }
                 } else {
                     let dir = await this._modpackManager.ensureModpackDir(modpack);
@@ -757,9 +757,9 @@ class ProcessManager {
             let base_command = `-Dos.name="Windows 10" -Dos.version="10.0" -Djava.library.path="${libs_dir}\\versions\\1.12.2-forge-14.23.5.2855\\natives" -cp "${libs_paths}" -Xmn${min_ram * 1024}M -Xmx${max_ram * 1024}M -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M -Dfml.ignoreInvalidMinecraftCertificates=true -Dfml.ignorePatchDiscrepancies=true -Djava.net.preferIPv4Stack=true -Dminecraft.applet.TargetDirectory="${game_dir}" net.minecraft.launchwrapper.Launch --username ${username} --version 1.12.2-forge-14.23.5.2855 --gameDir "${game_dir}" --assetsDir "${libs_dir}\\assets" --assetIndex 1.12 --uuid ${uuid} --accessToken null --userType mojang --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge --width 925 --height 530`
             base_command = this.integrate_java_parameters(base_command);
             let cd_path = game_dir;
-            let final_command = `${game_dir[0]}:&&cd "${cd_path}"&&"${java_path}" ${base_command.replace(uuid, '[redacted by chinese government]')}`;
+            let final_command = `${game_dir[0]}:&&cd "${cd_path}"&&"${java_path}" ${base_command}`;
 
-            log.info(`[MODPACK] <${modpack_name}> final command: ${final_command}`);
+            log.info(`[MODPACK] <${modpack_name}> final command: ${final_command.replace(uuid, '[redacted by chinese government]')}`);
             
             let process = spawn(final_command, [], { windowsHide: true, shell: true })
 

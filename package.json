@@ -1,13 +1,13 @@
 {
   "name": "delta",
   "productName": "Delta",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Launcher for minecraft project Delta",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc && cd src/svelte && npm run build",
     "dev": "cd src/svelte && npm run dev && cd ../../",
-    "start": "npm run build && electron-forge start",
+    "start": "npm run build && electron .",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "build-exe": "npm run build && electron-builder build --win --publish never",

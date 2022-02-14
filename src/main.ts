@@ -129,8 +129,6 @@ Object.defineProperty(global, 'autoUpdater', {
     value: new AutoUpdater(ipcMain, getRoot(), settingsStorage)
 })
 
-
-
 function getRoot() {
     let root_dir = path.join(app.getPath('appData'), '.delta');
     fs.ensureDirSync(root_dir);
