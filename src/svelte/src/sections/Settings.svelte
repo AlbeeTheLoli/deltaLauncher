@@ -13,9 +13,16 @@
     import TextField from '../../components/TextField.svelte'
     import { onMount } from "svelte";
 
+    let modpack_info = $global.modpackManager.MODPACK_INFO;
+
     //@ts-expect-error
     let max_ram = window.max_setable_ram;
+    $: modpack = $global.modpackManager.modpack;
     $: mem = $global.settingsManager.settings.modpack_settings.allocated_memory;
+    $: min_ram = modpack_info[modpack].min_ram;
+    $: can_play = $global.settingsManager.settings.bypass_ram_restricions || !((max_ram < min_ram) || ((max_ram - min_ram) < 0));
+    $: ram_step = (max_ram > 16) ? 1 : (max_ram % 4 == 0 ? .2 : .5);
+    $: ram_value_step = (max_ram > 16) ? (max_ram % 4 == 0 ? 4 : (max_ram % 2 == 0 ? 2 : 1)) : (max_ram % 4 == 0 ? 5 : 2);
 
     let bg_video_element = undefined;
     onMount(() => {
@@ -26,13 +33,13 @@
 <section>
     <SettingsContainer title='Игра'>
         <Setting 
-            title={(max_ram < 6) || ((max_ram - 6) < 0) ? 'Свободно: ' + max_ram + 'Гб' : 'Выделено памяти: ' + (Math.floor(mem) == mem ? `${mem}Гб` : `${mem * 1024}Мб`)}
-            tip={((max_ram < 6) || (max_ram - 6) < 0) ? {h1: 'Обратите внимание!', p: 'Лаунчер берет ДОСТУПНУЮ на момент запуска память. Если у вас больше 6 Гб, и лаунчер не видит их, попробуйте позакрывать ненужные приложения и убедиться, что свободно больше 6 ГБ оперативной памяти.'} : ($global.settingsManager.settings.modpack_settings.allocated_memory < 8 ? {h1: 'Внимание!', p: 'Значения ниже 8 Гб, могут повлиять на производительность игры.'} : undefined)}>
-            {#if (max_ram < 6) || ((max_ram - 6) < 0)}
-                <p>К сожалению, наши сборки требуют минимум 6 Гб для запуска.</p>
-                <div class="big-gap"></div>
+            title={(!can_play ? 'Свободно памяти: ' : 'Выделено памяти: ') + (Math.floor(mem) == mem ? `${mem}Гб` : `${mem * 1024}Мб`)}
+            tip={can_play ? {} : (mem > 12 ? {} : {h1: 'Внимание!', p: 'Значения ниже 8 Гб, могут повлиять на производительность игры.'})}>
+            {#if can_play}
+                <Slider id='memory-slider' min={min_ram} max={max_ram} step={ram_step} value_step={ram_value_step} unit={'Гб'} bind:value={$global.settingsManager.settings.modpack_settings.allocated_memory}></Slider> 
             {:else}
-                <Slider id='memory-slider' min={6} max={max_ram} step={(max_ram - 6) < 3 ? 0.1 : 0.25} value_step={(max_ram - 6) % 2 == 0 ? ((max_ram - 6) < 3 ? 5 : 4) : 5} unit={'Гб'} bind:value={$global.settingsManager.settings.modpack_settings.allocated_memory}></Slider>
+                <p>К сожалению, {global.capitalizeFirstLetter(modpack)} требует минимум {min_ram} Гб для запуска.</p>
+                <div class="big-gap"></div>
             {/if}
         </Setting>
 
@@ -101,7 +108,7 @@
                             }} 
                             bind:pth={$global.settingsManager.bg}
                             onchange={(to) => {
-                                console.log(`bg changed to: ${to}!!!!!!!`);
+                                console.log(`bg changed to: ${to}!`);
                             }}>
                         </SelectFile>
                     </Scrollable>

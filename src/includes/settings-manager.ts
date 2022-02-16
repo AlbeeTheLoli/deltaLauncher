@@ -1,4 +1,4 @@
-import { remote as rmt, ipcRenderer as ipc, remote } from 'electron'
+import { remote as rmt, ipcRenderer as ipc, remote, nativeTheme, systemPreferences } from 'electron'
 import Events from 'events';
 import * as fs from 'fs-extra';
 import * as path from 'path'
@@ -15,6 +15,7 @@ import { MODPACK_INFO, IModpackInfo, ADDONS_INFO } from './modpack.info';
 
 const settings_pattern = {
     dev_mode: true,
+    bypass_ram_restricions: false,
     on_page: 0,
     on_modpack: Object.keys(MODPACK_INFO)[0],
     selected_user: -1,
@@ -102,7 +103,7 @@ export class SettingsStorage {
     public first_launch = false;
     public after_update = false;
 
-    public constructor (remote: typeof rmt, root: string) {
+    public constructor (remote: typeof rmt, root: string, darkmode: boolean) {
         log.info('init');
 
         this._root = root;
@@ -122,6 +123,7 @@ export class SettingsStorage {
             console.error('', err);
         }
 
+        this._settings.appearance.default_dark_theme = darkmode;
         this._settings = deepMerge(this._settings, settings);
         this.saveSync();
 
@@ -181,7 +183,7 @@ export class SettingsStorage {
                 author: 'Albee',
                 version: '1.0.0',
                 description: 'Dark variant of default theme',
-                default_bg: 'https://cdn.discordapp.com/attachments/726363070594809897/941398770875240498/Screenshot_2022-02-10_212058.png',
+                default_bg: 'https://cdn.discordapp.com/attachments/731985411039166495/943591356553650217/sussyamogus_ENLARGEPENIS_SHIFTEDHUY.png',
                 path: '../default-dark.theme.css',
             }
         }

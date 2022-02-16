@@ -277,7 +277,7 @@ export class Downloader {
 
             this.progress_interval = setInterval(() => {
                 if (this.paused) return;
-                this.on_thread = Math.max(this.requests.length, threads - 1);
+                this.on_thread = Math.min(this.requests.length, threads);
                 this.progress = {
                     percent: received_bytes / total_bytes,
                     received_size: received_bytes,

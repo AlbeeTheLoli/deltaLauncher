@@ -4,7 +4,7 @@
     @author: 'Albee'
     @version: '1.0'
     @description: 'Dark variant of default theme'
-    @default-bg: 'https://cdn.discordapp.com/attachments/726363070594809897/941398770875240498/Screenshot_2022-02-10_212058.png'
+    @default-bg: 'https://cdn.discordapp.com/attachments/731985411039166495/943591356553650217/sussyamogus_ENLARGEPENIS_SHIFTEDHUY.png'
 */
 
 :root {
@@ -77,6 +77,7 @@ main {
 
 :root {
     --app-icon-clr: var(--text-primary);
+    --app-icon-clr-hover: var(--text-primary);
 
     --start-bg: var(--bg-secondary-alt);
     --start-button-text-hover: rgba(var(--text-primary-rgb), 1);

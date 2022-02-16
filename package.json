@@ -63,7 +63,8 @@
     "merge-files": "^0.1.2",
     "node-fetch": "^2.6.1",
     "request": "^2.88.2",
-    "rimraf": "^3.0.2"
+    "rimraf": "^3.0.2",
+    "uuidv4": "^6.2.12"
   },
   "devDependencies": {
     "@types/electron": "^1.6.10",

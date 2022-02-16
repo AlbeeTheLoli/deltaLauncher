@@ -1,4 +1,4 @@
-import electron, { app, BrowserWindow, ipcMain, remote } from "electron";
+import { app, BrowserWindow, ipcMain, remote, nativeTheme } from "electron";
 import path from 'path';
 import logger from 'electron-log'
 import * as fs from 'fs-extra';
@@ -100,7 +100,7 @@ function createMainWindow() {
 import { SettingsStorage } from './includes/settings-manager';
 declare let settingsStorage: SettingsStorage;
 Object.defineProperty(global, 'settingsStorage', {
-    value: new SettingsStorage(remote, getRoot())
+    value: new SettingsStorage(remote, getRoot(), nativeTheme.shouldUseDarkColors)
 })
 
 if (settingsStorage.settings.version == '') {

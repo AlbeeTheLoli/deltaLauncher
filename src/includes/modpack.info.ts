@@ -2,6 +2,8 @@ export interface IModpackInfo {
     libs_version: string,
     link: string,
     ip: string,
+    min_ram: number,
+    recommended_ram: number,
 }
 
 export interface IAddonInfo {
@@ -14,25 +16,37 @@ export interface IAddonInfo {
 }
 
 export const MODPACK_INFO: {[key: string]: IModpackInfo} = {
-    // 'magicae': {
-    //     link: '',
-    //     libs_version: '1.12',
-    //     ip: '',
-    // },
-    // 'fabrica': {
-    //     link: '',
-    //     libs_version: '1.12',
-    //     ip: '',
-    // },
+    'magicae': {
+        link: '',
+        libs_version: '1.12',
+        ip: '',
+
+        min_ram: 6,
+        recommended_ram: 10,
+    },
+    'fabrica': {
+        link: '',
+        libs_version: '1.12',
+        ip: '',
+
+        min_ram: 6,
+        recommended_ram: 10,
+    },
     'statera': {
         link: '',
         libs_version: '1.12',
         ip: '',
+
+        min_ram: 6,
+        recommended_ram: 10,
     },
     'insula': {
         link: '',
         libs_version: '1.12',
         ip: '',
+
+        min_ram: 6,
+        recommended_ram: 10,
     },
 }
 

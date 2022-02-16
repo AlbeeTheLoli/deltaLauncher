@@ -24,13 +24,13 @@ function capitalizeFirstLetter(string: string) {
 
 // Subdirectory for graphics: ./.essentials/_SETTINGS
 //! Don't touch .source.json and .versions.json it's for legal purposes
-enum GRAPHICS_LEVELS {
-    LOW, // new directory: -> _MIN
-    MINOR, // ->  _LOW 
-    DEFAULT, // -> _DEFAULT
-    HIGH, // -> _HIGH
-    ULTRA // _ULTRA
-}
+const GRAPHICS_LEVELS = [
+    "_LOW", // new directory: -> _MIN
+    "_MINOR", // ->  _LOW 
+    "_DEFAULT", // -> _DEFAULT
+    "_HIGH", // -> _HIGH
+    "_ULTRA" // _ULTRA
+]
 
 import { MODPACK_INFO, ADDONS_INFO, IAddonInfo } from './modpack.info';
 import { extractWithProgress } from './extract-with-progress';
@@ -38,8 +38,11 @@ import { extractWithProgress } from './extract-with-progress';
 export type TStatus = 'idle' | 'download' | 'launched' | 'init-install' | 'install' | 'post-install' | 'ensure-env' | 'unzipping' | 'moving-libs';
 
 export class ModpackManager {
+    public MODPACK_INFO = MODPACK_INFO;
+    public ADDONS_INFO = ADDONS_INFO;
+
     private __fs: undefined | typeof fs = undefined;
-    private _graphics_level = GRAPHICS_LEVELS.DEFAULT;
+    private _graphics_level = GRAPHICS_LEVELS[2]; // моя оценка по программированию (defolt)
     private _root = '';
     public _modpacks: any;
     public _libs: any;
@@ -47,13 +50,13 @@ export class ModpackManager {
     private _settingsStorage: SettingsStorage;
     private log_location = log.transports.file.getFile().path.split('\\main.log')[0];
 
-    private _selected_modpack = Object.keys(MODPACK_INFO)[0];
+    private _selected_modpack;
 
     public sha = '';
     private _status: TStatus = 'idle';
     public set status(to: TStatus) {
         this._status = to;
-        BrowserWindow.getAllWindows()[0].webContents.send('modpack-manager-status-changed', { to: (this.processManager.launched_modpacks[to]!=undefined ? 'launched' : to) })
+        BrowserWindow.getAllWindows()[0].webContents.send('modpack-manager-status-changed', { to: (Object.keys(this.processManager.launched_modpacks).includes(to) ? 'launched' : to) })
     }
 
     public get status() {
@@ -80,6 +83,7 @@ export class ModpackManager {
         log.info('init');
 
         this._settingsStorage = settingsStorage;
+        this._selected_modpack = settingsStorage.settings.on_modpack || Object.keys(MODPACK_INFO)[0];
         this._root = root;
         this.ensureRoot();
 
@@ -230,7 +234,7 @@ export class ModpackManager {
     }
 
     public async isFirstLaunch(modpack: string): Promise<boolean> {
-        return await fs.pathExists((await this.ensureModpackDir(modpack)) + '\\.mixin.out');
+        return await fs.pathExists(path.join(await this.ensureModpackDir(modpack), '.mixin.out')) == false;
     }
 
     public async getInfo(item: string, version?: string): Promise<any> {
@@ -261,6 +265,132 @@ export class ModpackManager {
         fs.writeFile(pth, JSON.stringify(res));
     }
 
+    public async applyControlSettings() {
+        for (const modpack_name of Object.keys(this.modpacks)) {
+            let modpack_folder = await this.ensureModpackDir(modpack_name);
+    
+            let options_path = path.join(modpack_folder, 'options.txt');
+            let of_options_path = path.join(modpack_folder, 'optionsof.txt');
+            if (await fs.pathExists(options_path) == false) { 
+                log.info('[SETTINGS] There are no options in ' + modpack_name);
+                continue;
+            }
+            
+            if (await fs.pathExists(of_options_path) == false) { 
+                log.info('[SETTINGS] There are no optifine options in ' + modpack_name);
+                continue;
+            }
+    
+            let options_string = (await fs.readFile(options_path)).toString();
+            let new_options_string = options_string;
+    
+            let controls_object = { ...this._settingsStorage.settings.modpack_settings.controls };
+            // Dismount is the same as the crouch
+            //@ts-expect-error
+            controls_object.dismount = controls_object.crouch;
+            //@ts-expect-error
+            controls_object.dismount.minecraft_key = 'key_key.dismount';
+    
+    
+            let changed_smth = false;
+            for (const key of Object.keys(controls_object))
+            {
+                //@ts-expect-error
+                let minecraft_key = controls_object[key].minecraft_key;
+                //@ts-expect-error
+                let minecraft_code = controls_object[key].minecraft_code;
+                
+                let new_control_line = `${minecraft_key}:${minecraft_code}`;
+    
+                let index_of_key = options_string.indexOf(minecraft_key + ':');
+                let start_index_of_val = index_of_key + (minecraft_key + ':').length;
+                let val = '';
+                for (let i = 0; i < 32; i++)
+                {
+                    let symbol = options_string.toString().charAt(start_index_of_val + i);
+                    if (symbol == '\n' || symbol == ' ') { break; }
+                    val += symbol;
+                }
+    
+                let old_control_line = `${minecraft_key}:${val}`;
+    
+                // Write to optionsof as well cuz this key is fucking special (fuck optifine)
+                if (minecraft_key == 'key_of.key.zoom') {
+                    let of_options_string = (await fs.readFile(of_options_path)).toString();
+                    let of_new_control_line = `key_of.key.zoom:${minecraft_code}`;
+    
+                    let of_index_of_key = of_options_string.indexOf('key_of.key.zoom:');
+                    let of_start_index_of_val = of_index_of_key + ('key_of.key.zoom:').length;
+                    let of_val = '';
+                    for (let i = 0; i < 4; i++)
+                    {
+                        let of_symbol = of_options_string.toString().charAt(of_start_index_of_val + i);
+                        if (of_symbol == '\n') { break; }
+                        of_val += of_symbol;
+                    }
+    
+                    let of_old_control_line = `key_of.key.zoom:${of_val}`;
+                    let of_new_options_string = of_options_string.toString().replace(of_old_control_line, of_new_control_line);
+    
+                    if (old_control_line == new_control_line) {
+                        log.info(`[SETTINGS] <optionsof.txt> Unchanged: ${old_control_line}`);
+                    } else {
+                        log.info(`[SETTINGS] <optionsof.txt> From: ${of_old_control_line}`);
+                        log.info(`[SETTINGS] <optionsof.txt> To: ${of_new_control_line}`);
+                        await fs.writeFile(of_options_path, of_new_options_string);
+                    }
+                }
+    
+                if (old_control_line == new_control_line) {
+                    log.info(`[SETTINGS] <options.txt> Unchanged: ${old_control_line}`);
+                    continue;
+                }
+    
+                changed_smth = true;
+                log.info(`[SETTINGS] <options.txt> From: ${old_control_line}`);
+                log.info(`[SETTINGS] <options.txt> To: ${new_control_line}`);
+                new_options_string = new_options_string.toString().replace(old_control_line, new_control_line);
+            }
+            
+            if (changed_smth){
+                log.info(`[SETTINGS] <options.txt> Updating file`);
+                await fs.writeFile(options_path, new_options_string);
+            } else {
+                log.info(`[SETTINGS] <options.txt> No changes have been made.`);
+            }
+        }
+
+        return true;
+    }
+
+    public async integrateSettings(modpack_name: string): Promise<boolean> {
+        let fl = await this.isFirstLaunch(modpack_name); // studio
+        if (fl && (await this.modpackInstaller.modpackInstalled(modpack_name))) {
+            let preset = GRAPHICS_LEVELS[this._settingsStorage.settings.modpack_settings.optimization_level - 1];
+            let modpack_folder = await this.ensureModpackDir(modpack_name)
+            let src = path.join(modpack_folder, '.essentials', '_SETTINGS', preset);
+            
+            log.info(`[MODPACK] <${modpack_name}> integrating settings: [${preset}]. src: [${src}]...`);
+            if (await fs.pathExists(src)) {
+                let files = await fs.readdir(src);
+                await files.forEach(async file => {
+                    let file_pth = path.join(src, file);
+                    let dist = path.join(modpack_folder, file);
+                    log.info(`[MODPACK] <${modpack_name}> copying from: [${file_pth}] to [${dist}]...`);
+                    if (await fs.pathExists(file_pth)) {
+                        await fs.copyFile(file_pth, dist);
+                    }
+                })
+                return true;
+            }
+
+            log.info(`[MODPACK] <${modpack_name}> src not found!`);
+        }
+
+        log.info(`[MODPACK] <${modpack_name}> not a first launch. skipping settings intergration...`);
+        return false;
+    }
+
     public async ensureModpack(modpack_name: string, force_install=false) {
         let libs_version = this._modpacks[modpack_name].libs_version;
         let libs_installed = await this.modpackInstaller.installLibs(libs_version);
@@ -273,9 +403,11 @@ export class ModpackManager {
     }
 
     public async ensureModpackEnvironment(modpack_name: string, force_install=false) {
+        let user_settings_applied = await this.applyControlSettings();
+        let settings_applied = await this.integrateSettings(modpack_name);
         let addons_installed = await this.modpackInstaller.ensureAddonsInModpack(modpack_name);
 
-        return addons_installed;
+        return addons_installed && settings_applied && user_settings_applied;
     }
 
     public async cancelCurrentDownload() {
@@ -715,11 +847,14 @@ class ModpackInstaller {
 
 }
 
+type TLaunchStages = 'idle' | 'init' | 'lib-gathering' | 'spawning'
+
 class ProcessManager {
     private _settingsStorage: SettingsStorage;
     private _modpackManager: ModpackManager;
     
-    public busy = false;
+    public launching = false;
+    public launching_stage: TLaunchStages = 'idle';
     public root: string;
 
     constructor(root: string, modpackManager: ModpackManager, settingsStorage: SettingsStorage) {
@@ -730,7 +865,7 @@ class ProcessManager {
 
     os_version = os.release().split(".")[0];
     launched_modpacks: {
-        [key: string]: { process: ChildProcess },
+        [key: string]: { process: ChildProcess | undefined, launch_time: Date },
     } = {};
     public async launchModpack(modpack_name: string, min_ram: number, max_ram: number, username: string, uuid: string): Promise<string> {
         return new Promise(async (_resolve, reject) => {
@@ -739,7 +874,14 @@ class ProcessManager {
                 return;
             }
 
+            if (this.launching) {
+                reject('currently launching');
+                return;
+            }
+
             log.info(`[MODPACK] <${modpack_name}> launching...`);
+            this.launching = true;
+            this.launching_stage = 'init';
 
             BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-initializing', { modpack_name });
 
@@ -748,7 +890,8 @@ class ProcessManager {
 
             BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-launching', { modpack_name });
 
-            let libs_paths = await (await this.findAllFiles(libs_dir, '.jar')).join(';');
+            this.launching_stage = 'lib-gathering';
+            let libs_paths = (await this.findAllFiles(libs_dir, '.jar')).join(';');
 
             console.log("LAUNCHING CODE:")
 
@@ -761,12 +904,16 @@ class ProcessManager {
 
             log.info(`[MODPACK] <${modpack_name}> final command: ${final_command.replace(uuid, '[redacted by chinese government]')}`);
             
+            this.launching_stage = 'spawning';
             let process = spawn(final_command, [], { windowsHide: true, shell: true })
 
             let window_opened = false;
             process.on('exit', (code, signal) => {
                 log.info(`[MODPACK] <${modpack_name}> exit`, code, signal);
+                this.launched_modpacks[modpack_name].process = undefined;
                 delete this.launched_modpacks[modpack_name]
+                this.launching = false;
+                this.launched_modpacks = this.launched_modpacks;
                 BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-exit', { modpack_name, code, signal });
                 _resolve('exited');
                 return;
@@ -774,7 +921,10 @@ class ProcessManager {
 
             process.on('error', error => {
                 log.error(`[MODPACK] <${modpack_name}> error`, error);
+                this.launched_modpacks[modpack_name].process = undefined;
                 delete this.launched_modpacks[modpack_name]
+                this.launching = false;
+                this.launched_modpacks = this.launched_modpacks;
                 BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-error', { modpack_name, error });
                 _resolve('error');
                 return;
@@ -789,6 +939,8 @@ class ProcessManager {
                 if (!window_opened) {
                     if (data.toString().split("Starts to replace vanilla recipe ingredients with ore ingredients.").length > 1) {
                         log.error(`[MODPACK] <${modpack_name}> window opened`);
+                        this.launching = false;
+                        this.launched_modpacks = this.launched_modpacks;
                         window_opened = true;
                         BrowserWindow.getAllWindows()[0]?.webContents.send('modpack-launched', { modpack_name });
                         _resolve('launched');
@@ -800,6 +952,7 @@ class ProcessManager {
                 ...this.launched_modpacks,
                 [modpack_name]: {
                     process: process,
+                    launch_time: new Date(),
                 }
             }
             this._modpackManager.status = 'idle';
@@ -829,7 +982,7 @@ class ProcessManager {
             }
 
             try {
-                let files = fs.readdirSync(`${pth}`)
+                let files = await fs.readdir(`${pth}`)
                 if (files.length < 1) resolve(undefined);
                 for (const _pth of files) {
                     await this.findAllFiles_rec(path.join(pth, _pth), looking_for, steps - 1)

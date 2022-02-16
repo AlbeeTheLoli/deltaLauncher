@@ -12,10 +12,13 @@
 
     $: status = $global.state;
 
+    $: min_ram = $global.modpackManager.MODPACK_INFO[$global.modpackManager.modpack].min_ram;
+    $: can_play = $global.settingsManager.settings.bypass_ram_restricions || !((max_ram < min_ram) || ((max_ram - min_ram) < 0));
+
     let locked = false;
-    $: _locked = ((max_ram < 6) || (max_ram - 6) < 0) ? (true) : ((states[btn_state].locked) ? true : locked);
+    $: _locked = !can_play ? (true) : ((states[btn_state].locked) ? true : locked);
     let paused = false;
-    $: btn_state = (status == 'unzipping' || status == 'post-install' || status == 'ensure-env' || status == 'moving-libs') ? 'post-download' : status == 'init-install' ? 'init-download' : status == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ($global.state == 'launched' ? 'launched' : 'play') : 'download');
+    $: btn_state = (status == 'unzipping' || status == 'post-install' || status == 'ensure-env' || status == 'moving-libs') ? 'post-download' : status == 'init-install' ? 'init-download' : status == 'download' ? (paused ? 'paused' : 'downloading') : ($global.modpackManager.modpacks[$global.modpackManager.modpack].installed ? ($global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack] && $global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack].process ? 'launched' : 'play') : 'download');
     $: states = {
         'play': {
             h1: 'Играть',
@@ -191,39 +194,8 @@
         },
     }
 
-    $global.ipcRenderer.on('modpack-initializing', (event, { modpack_name }) => {
-        locked = false;
-    });
-
-    $global.ipcRenderer.on('modpack-launching', (event, { modpack_name }) => {
-        locked = true;
-        $global.modpackManager.modpack = $global.modpackManager.modpack;
-        $global.modpackManager.status = $global.modpackManager.status;
-        global.overlay.show(`Запуск ${global.capitalizeFirstLetter(modpack_name)}`, 'Пожалуйста, не выключайте лаунчер.', true);
-    });
-
-    $global.ipcRenderer.on('modpack-launched', (event, { modpack_name }) => {
-        locked = false;
-        $global.modpackManager.modpack = $global.modpackManager.modpack;
-        $global.modpackManager.status = $global.modpackManager.status;
-        global.overlay.hide();
-    });
-
-    $global.ipcRenderer.on('modpack-exit', (event, { modpack_name, code, signal }) => {
-        $global.modpackManager.processManager.launched_modpacks = $global.modpackManager.processManager.launched_modpacks;
-        $global.modpackManager.modpack = $global.modpackManager.modpack;
-        $global.modpackManager.status = $global.modpackManager.status;
-        console.log(`<${modpack_name}>`, `exit [${code} ${signal}]`)
-        locked = false;
-    });
-
-    $global.ipcRenderer.on('modpack-error', (event, { modpack_name, code, signal }) => {
-        $global.modpackManager.processManager.launched_modpacks = $global.modpackManager.processManager.launched_modpacks;
-        $global.modpackManager.modpack = $global.modpackManager.modpack;
-        $global.modpackManager.status = $global.modpackManager.status;
-        console.log(`<${modpack_name}>`, `error [${code} ${signal}]`)
-        locked = false;
-    });
+    $global.ipcRenderer.on('modpack-exit', () => {btn_state = btn_state});
+    $global.ipcRenderer.on('modpack-error', () => {btn_state = btn_state});
 </script>
 
 <div class:download={$global.modpackManager.status != 'idle'} class="main-button-wrapper">

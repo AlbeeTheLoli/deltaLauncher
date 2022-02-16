@@ -29,7 +29,7 @@
 {#if pth}
     <p on:click={(e) => {e.altKey || e.ctrlKey ? showFile() : showSelect()}} class="file">{normalized_path}</p>
 {:else}
-    <p on:click={showSelect} class="file a">По умолчанию</p>
+    <p on:click={showSelect} class="file a">Нажмите чтобы сменить</p>
 {/if}
 
 <style>

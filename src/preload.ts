@@ -147,7 +147,7 @@ window.onbeforeload = () => {
 }
 
 //@ts-expect-error
-window.max_setable_ram = Math.min(Math.ceil(os.freemem() / 1024 / 1024 / 1024) + 1, Math.ceil(os.totalmem() / 1024 / 1024 / 1024));
+window.max_setable_ram = Math.ceil(os.totalmem() / 1024 / 1024 / 1024);
 //@ts-expect-error
 window.min_setable_ram = 4;
 //@ts-expect-error

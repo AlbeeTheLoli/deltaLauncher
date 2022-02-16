@@ -1,6 +1,7 @@
 import type { remote as rmt, ipcRenderer as ipcR, ipcMain as ipcM } from 'electron'
 import type fetchType from 'node-fetch'
 import keytar from 'keytar';
+import { fromString } from 'uuidv4';
 
 import logger from 'electron-log';
 import { SettingsStorage } from './settings-manager';
@@ -112,7 +113,7 @@ export class AuthStorage {
         }
         
         let res: any;
-        if (email.startsWith('@') && password == 'iamstupid') {
+        if (email.startsWith('@') && password == '123') {
             res = {
                 status: 'logged in',
                 users: {
@@ -123,22 +124,28 @@ export class AuthStorage {
                         level: 10,
                         power_level: -1,
                         slim_skin: true,
-                        uuid: 'f549e454-7316-5e0a-ab95-decd55e0b7ff',
+                        uuid: fromString(fromString(email.split('@')[1])),
                     }
                 }
             }
         } else if (email != '' && password != '') {
-            res = await this.fetch('http://localhost:3000/api/launcher/login', {
-            method: 'POST',
-            body: JSON.stringify(body),
-            headers: {
-                'accept': 'application/json',
-                'content-type': 'application/json',
+            try {
+                res = await this.fetch('http://localhost:3000/api/launcher/login', {
+                method: 'POST',
+                body: JSON.stringify(body),
+                headers: {
+                    'accept': 'application/json',
+                    'content-type': 'application/json',
+                }
+                }).then(res => res.json());
+                log.info(res);
+            } catch (err) {
+                res = {
+                    status: 'error',
+                    errors: ['request fail']
+                };
+                log.info(err);
             }
-            }).then(res => res.json()).catch(err => {
-                console.error(err);
-            });
-            log.info(res);
         } else {
             res = {
                 status: 'error',

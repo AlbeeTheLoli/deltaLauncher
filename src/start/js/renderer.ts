@@ -64,7 +64,7 @@ function waitConnected() {
                 if (navigator.onLine) {
                     resolve(true);
                 } else {
-                    console.log('> [START] no internet...');
+                    console.log('[START] no internet...');
                 }
             }, 2000)
         }
@@ -89,7 +89,7 @@ function waitConnected() {
 
 let procent = 0;
 async function checkForUpdates() {
-    console.log('> [START] checking for updates...');
+    console.log('[START] checking for updates...');
 
     await waitConnected();
     return await autoUpdater.checkForUpdates();
@@ -104,8 +104,10 @@ ipcRenderer.on('update-found', (event, version) => {
     update_p.innerHTML = `Доступно обновление: '${version}'`
 });
 
+let update_progress;
 ipcRenderer.on('update-progress', (event, {name, url, progress}) => {
-    update_p.innerHTML = `Скачиваем версию '${name}': ${Math.round(progress.percent.toPrecision(2) * 1000) / 10}%`
+    update_progress = progress;
+    update_p.innerHTML = `Скачиваем версию '${name}': ${Math.round(update_progress.percent.toPrecision(2) * 1000) / 10}%`
 });
 
 ipcRenderer.on('update-downloaded', (event, version) => {

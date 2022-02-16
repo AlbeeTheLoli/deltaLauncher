@@ -12,6 +12,7 @@
 	import Overlay from '../components/overlays/Overlay.svelte';
 	import AskOverlay from '../components/overlays/AskOverlay.svelte';
 	import SelectOverlay from '../components/overlays/SelectOverlay.svelte';
+	import LaunchOverlay from '../components/overlays/LaunchOverlay.svelte';
 	import Checkbox from '../components/Checkbox.svelte';
 	import TextField from '../components/TextField.svelte';
 	
@@ -91,6 +92,8 @@
 <SelectOverlay />
 
 {#if loaded}
+
+<LaunchOverlay />
 
 <div id="bg" class="bg" class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion}>
 	<div id="bg-opacity" class="color" style="transition: none;"></div>

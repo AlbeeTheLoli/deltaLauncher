@@ -28,7 +28,14 @@
     $: downloading = status != 'idle' && status != 'launched';
     $: downloading_item = $global.modpackManager.downloading_item;
     $: paused = $global.modpackManager.downloader.paused;
-    $: launched = false;
+
+    $: launch_time = $global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack] ? $global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack].launch_time : new Date();
+    $: play_time = new Date()
+
+    setInterval(() => {
+        if (launch_time) play_time = new Date(Math.abs((new Date()).getTime() - launch_time.getTime()));
+        play_time.setHours(play_time.getHours() - 4);
+    });
 
     let soft_downloading = false;
     let install_status = '';
@@ -64,7 +71,7 @@
 
 </script>
 
-<footer class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion} class:download={downloading} class:soft-download={launched}>
+<footer class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion} class:download={downloading} class:soft-download={$global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack] && $global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack]?.process}>
     <DropMenu bind:locked={downloading} h1={global.capitalizeFirstLetter($global.modpackManager.modpack)} p={'Разработчик'} menus={servers_menus.filter((el) => {return el.id != $global.modpackManager.modpack})} />
     <div id="footer-bar" class="footer-bar">
         <div class="progress-bar">
@@ -72,7 +79,7 @@
                 <div class="top"></div>
                 <div class="bottom"></div>
             </div>
-            <div class="filler" style="width: {$global.download_progress.percent * 100}%;">
+            <div class="filler" style="width: {Math.min($global.download_progress.percent, 1) * 100}%;">
                 <div class="top"></div>
                 <div class="bottom"></div>
             </div>
@@ -80,27 +87,27 @@
         <div class="info">
             {#if downloading}
                 {#if status == 'init-install'}
-                    <h1>Подготовка к загрузке{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toPrecision(2)}%)<Loading /></h1>
+                    <h1>Подготовка к загрузке{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toFixed(2)}%)<Loading /></h1>
                     <p>Ожидание ответа сервера: [фаза {$global.download_progress.on_thread + 1} из {$global.download_progress.threads}]<Loading /></p>
                 {:else if status == 'download'}
-                    <h1>Скачивание{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toPrecision(2)}%)<Loading /></h1>
+                    <h1>Скачивание{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toFixed(2)}%)<Loading /></h1>
                     {#if paused}
                         <p>Пауза</p>
                     {:else if $global.download_progress.speed != undefined}
-                        <p>Скорость: {$global.download_progress.speed.toPrecision(2)} Мб в секунду</p>
+                        <p>Скорость: {$global.download_progress.speed.toFixed(2)} Мб в секунду</p>
                     {:else}
                         <p>Загрузка<Loading /></p>
                     {/if}
                 {:else}
-                    <h1>Установка{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toPrecision(2)}%)</h1>
+                    <h1>Установка{downloading_item != 'libs' ? `: ${global.capitalizeFirstLetter(downloading_item)}` : ' библиотек'} ({($global.download_progress.percent * 100).toFixed(2)}%)</h1>
                     {#if status == 'unzipping'}
                         <p>Распаковка архива<Loading /> </p>
                     {:else if status == 'moving-libs'}
                         <p>Перенос библиотек: {$global.download_progress.percent}%</p>
                     {/if}
                 {/if}
-            {:else if launched}
-                <h1>Время в игре:</h1>
+            {:else if $global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack] && $global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack]?.process}
+                <h1>Время в игре: {play_time.toLocaleTimeString('en-UK', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false})}</h1>
                 <p>Разработчик</p>
             {:else}
                 <h1>Тут что-то будет<Loading /></h1>

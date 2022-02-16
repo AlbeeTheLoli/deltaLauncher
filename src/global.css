@@ -112,15 +112,24 @@ input {
     justify-content: center;
     align-items: center;
 
-    background: rgba(var(--clr-primary-rgb), 0);
+    background: rgba(var(--alt-primary-rgb), 0);
 
     transition: background-color .2s;
 }
 
 .app-frame > .exit:hover {
-    background: rgba(var(--clr-primary-rgb), 1);
+    background: rgba(var(--alt-primary-rgb), 1);
 
     transition: background-color .2s;
+}
+
+.app-frame .exit line {
+    stroke: var(--app-icon-clr);
+    transition: all .2s;
+}
+
+.app-frame .exit:hover line {
+    stroke: var(--app-icon-clr-hover);
 }
 
 .app-frame > .reload {
@@ -249,6 +258,13 @@ input {
     z-index: -1;
     opacity: 1;
     background: rgba(var(--app-bg-rgb), 0);
+    transform: scale(1);
+
+    transition: transform 2.56s cubic-bezier(0.19, 1, 0.22, 1) !important;
+}
+
+.bg.darken > .img {
+    transform: scale(1.5);
 }
 
 .bg.plain > .img {
@@ -306,5 +322,5 @@ input {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: var(--clr-tertiary);
+    background-color: var(--alt-tertiary);
 }
