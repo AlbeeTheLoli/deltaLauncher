@@ -70,6 +70,8 @@
         }
     }
 
+    $: last_version = 'v0.0.0.0'
+
 </script>
 
 <footer class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion} class:download={downloading} class:soft-download={$global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack] && $global.modpackManager.processManager.launched_modpacks[$global.modpackManager.modpack]?.process}>
@@ -115,7 +117,11 @@
                 {#if $global.modpackManager.sha}
                     <p>Эксперементальная ветка: {$global.modpackManager.sha}</p>
                 {:else}
-                    <p>Версия: 0.0.0.0</p>
+                    <p>Версия: {#await $global.modpackManager.getInfo($global.modpackManager.modpack).then(res => {last_version = res.version; return res})}
+                        {last_version}
+                    {:then res}
+                        {res.version}
+                    {/await}</p>
                 {/if}
             {/if}
         </div>

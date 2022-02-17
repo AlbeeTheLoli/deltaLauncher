@@ -10,8 +10,6 @@ import os from 'os'
 import { spawn, ChildProcess } from 'child_process';
 import { Downloader } from './downloader';
 
-const mergeFiles = require('merge-files');
-
 import logger from 'electron-log';
 const log = logger.create('modpack');
 log.variables.label = 'modpack';
@@ -23,13 +21,12 @@ function capitalizeFirstLetter(string: string) {
 }
 
 // Subdirectory for graphics: ./.essentials/_SETTINGS
-//! Don't touch .source.json and .versions.json it's for legal purposes
 const GRAPHICS_LEVELS = [
-    "_LOW", // new directory: -> _MIN
-    "_MINOR", // ->  _LOW 
-    "_DEFAULT", // -> _DEFAULT
-    "_HIGH", // -> _HIGH
-    "_ULTRA" // _ULTRA
+    "_MIN",
+    "_LOW",
+    "_DEFAULT",
+    "_HIGH",
+    "_ULTRA"
 ]
 
 import { MODPACK_INFO, ADDONS_INFO, IAddonInfo, IModpackInfo } from './modpack.info';
@@ -251,22 +248,30 @@ export class ModpackManager {
             pth = await this.ensureModpackDir(item);
         }
 
-        const res = JSON.parse((await fs.readFile(pth)).toString());
-        if (!res.version) res.version = 'v0.0.0.0';
+        pth = path.join(pth, 'info.json')
+        await fs.ensureFile(pth);
+
+        const raw = (await fs.readFile(pth)).toString();
+        const res = JSON.parse(raw == '' ? '{}' : raw);
+        if (!res.version) res.version = '0.0.0.0';
         return res;
     }
 
     public async setInfo(item: string, to: any, version='1.12'): Promise<void> {
         let pth = '';
         if (item == 'libs') {
-            pth = await this.ensureLibsDir(version);;
+            pth = await this.ensureLibsDir(version);
         } else if (this.modpacks[item]) {
             pth = await this.ensureModpackDir(item);
         }
 
-        let res = JSON.parse((await fs.readFile(pth)).toString());
+        pth = path.join(pth, 'info.json')
+        await fs.ensureFile(pth);
+
+        const raw = (await fs.readFile(pth)).toString();
+        let res = JSON.parse(raw == '' ? '{}' : raw);
         res = { ...res, ...to }
-        fs.writeFile(pth, JSON.stringify(res));
+        await fs.writeFile(pth, JSON.stringify(res));
     }
 
     public async applyControlSettings() {
