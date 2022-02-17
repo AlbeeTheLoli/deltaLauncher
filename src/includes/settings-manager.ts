@@ -52,7 +52,7 @@ const settings_pattern = {
         reduced_motion: false,
         bg: "",
         theme: "",
-        filter_opacity: 60,
+        filter_opacity: 80,
         blur_amount: 0,
         bg_volume: 50,
     },

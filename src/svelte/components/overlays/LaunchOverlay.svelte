@@ -92,17 +92,44 @@
 
     .overlay-container p {
         color: rgba(var(--text-primary-rgb), 1);
-        font-weight: 600;
+        font-weight: 700;
         opacity: .16;
         font-size: 14px;
         display: flex;
-        margin: 2px 0;
+        align-items: center;
+        margin: 3px 0;
+
+        transition: all .96s cubic-bezier(0.165, 0.84, 0.44, 1) .32s;
+    }
+
+    .overlay-thing p::before {
+        max-width: 0;
+        margin-left: -3px;
+        height: 0;
+        content: "";
+        border-left: var(--text-primary) 3px solid;
+        padding-left: 0;
+
+        transition: all .32s cubic-bezier(0.165, 0.84, 0.44, 1) 0s;
     }
 
     .overlay-container p.active {
-        margin: 4px 0 !important;
+        margin: 6px 0 !important;
         opacity: 1;
         font-size: 16px;
+        margin-left: 3px !important;
+
+        transition: all .96s cubic-bezier(0.165, 0.84, 0.44, 1) 0s !important;
+    }
+
+    .overlay-thing p.active::before {
+        width: 0;
+        height: 8px;
+        content: "";
+        border-left: var(--text-primary) 3px solid;
+        padding-left: 8px;
+
+        transition: all .32s cubic-bezier(0.165, 0.84, 0.44, 1) .32s !important;
     }
 
     .overlay-thing.open {

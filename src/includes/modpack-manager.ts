@@ -32,10 +32,16 @@ const GRAPHICS_LEVELS = [
     "_ULTRA" // _ULTRA
 ]
 
-import { MODPACK_INFO, ADDONS_INFO, IAddonInfo } from './modpack.info';
+import { MODPACK_INFO, ADDONS_INFO, IAddonInfo, IModpackInfo } from './modpack.info';
 import { extractWithProgress } from './extract-with-progress';
 
 export type TStatus = 'idle' | 'download' | 'launched' | 'init-install' | 'install' | 'post-install' | 'ensure-env' | 'unzipping' | 'moving-libs';
+
+type TModpack = {
+    path: string,
+    version: string,
+    installed: boolean,
+} & IModpackInfo;
 
 export class ModpackManager {
     public MODPACK_INFO = MODPACK_INFO;
@@ -44,7 +50,7 @@ export class ModpackManager {
     private __fs: undefined | typeof fs = undefined;
     private _graphics_level = GRAPHICS_LEVELS[2]; // моя оценка по программированию (defolt)
     private _root = '';
-    public _modpacks: any;
+    public _modpacks: {[key: string]: TModpack} = {};
     public _libs: any;
     private _resources: any;
     private _settingsStorage: SettingsStorage;
@@ -92,7 +98,7 @@ export class ModpackManager {
         this.processManager = new ProcessManager(root, this, settingsStorage);
 
         this.updateLibsDirs();
-        this.updateModpackDirs();
+        this.updateModpacksInfo();
         this.updateResourcesDirs();
         this.ensureAddonsDir();
 
@@ -101,7 +107,7 @@ export class ModpackManager {
         }
     }
 
-    public updateModpackDirs(): void {
+    public updateModpacksInfo(): void {
         this._modpacks = {};
 
         for (const mdpck in MODPACK_INFO) {
@@ -110,7 +116,7 @@ export class ModpackManager {
                 [mdpck]: {
                     //@ts-expect-error
                     path: path.normalize(path.join(this._settingsStorage.settings.modpacks[mdpck].path.replace(/%ROOT%/g, this._root))),
-                    version: 1.0,
+                    version: '0.0.0.0',
                     installed: false,
                     ...MODPACK_INFO[mdpck],
                 },
@@ -237,13 +243,12 @@ export class ModpackManager {
         return await fs.pathExists(path.join(await this.ensureModpackDir(modpack), '.mixin.out')) == false;
     }
 
-    public async getInfo(item: string, version?: string): Promise<any> {
-        await fs.ensureDir(item)
+    public async getInfo(item: string, version='1.12'): Promise<any> {
         let pth = '';
-        if (item == 'libs' && version) {
-            pth = this.libs[version].path;
+        if (item == 'libs') {
+            pth = await this.ensureLibsDir(version);;
         } else if (this.modpacks[item]) {
-            pth = this.modpacks[this.modpacks[item]].path;
+            pth = await this.ensureModpackDir(item);
         }
 
         const res = JSON.parse((await fs.readFile(pth)).toString());
@@ -251,13 +256,12 @@ export class ModpackManager {
         return res;
     }
 
-    public async setInfo(item: string, to: any, version?: string): Promise<void> {
-        await fs.ensureDir(item)
+    public async setInfo(item: string, to: any, version='1.12'): Promise<void> {
         let pth = '';
-        if (item == 'libs' && version) {
-            pth = this.libs[version].path;
+        if (item == 'libs') {
+            pth = await this.ensureLibsDir(version);;
         } else if (this.modpacks[item]) {
-            pth = this.modpacks[this.modpacks[item]].path;
+            pth = await this.ensureModpackDir(item);
         }
 
         let res = JSON.parse((await fs.readFile(pth)).toString());
@@ -403,9 +407,11 @@ export class ModpackManager {
     }
 
     public async ensureModpackEnvironment(modpack_name: string, force_install=false) {
-        let user_settings_applied = await this.applyControlSettings();
         let settings_applied = await this.integrateSettings(modpack_name);
+        let user_settings_applied = await this.applyControlSettings();
         let addons_installed = await this.modpackInstaller.ensureAddonsInModpack(modpack_name);
+
+        this.status = 'idle';
 
         return addons_installed && settings_applied && user_settings_applied;
     }
@@ -495,7 +501,7 @@ class ModpackInstaller {
     //. >>> LIBS
     //#region LIBS ---------------------------------------------------
 
-    public async getLatestLinkToLibs(version?: string): Promise<string> {
+    public async getLatestLinkToLibs(version?: string): Promise<{link: string, version: string}> {
         return new Promise((resolve, reject) => {
             nodeFetch(`https://api.github.com/repos/Ektadelta/Encore/tags`, {
                 method: 'GET',
@@ -506,12 +512,15 @@ class ModpackInstaller {
                 }
             }).catch(err => { log.error(err) })
         }).then(res => {
-            return `https://github.com/Ektadelta/Encore/releases/download/${res}/Encore-${res}.zip`
+            return { 
+                link: `https://github.com/Ektadelta/Encore/releases/download/${res}/Encore-${res}.zip`, 
+                version: (res as string) 
+            }
         })
     }
 
     public async downloadLibsArchive(version='1.12', force_download=false): Promise<string> {
-        let link = await this.getLatestLinkToLibs(version);
+        let info = await this.getLatestLinkToLibs(version);
         let folder = await this._modpackManager.ensureLibsDir(version);
         log.info(`[MODPACK] <libs\\${version}> downloading archive...`);
 
@@ -521,7 +530,7 @@ class ModpackInstaller {
         } else {
             let downloaded_path = await this._downloader.download(
                 folder,
-                link,
+                info.link,
                 'libs.zip',
                 this._settingsStorage.settings.download_threads,
                 (progress: any) => {
@@ -533,6 +542,9 @@ class ModpackInstaller {
                 }
             )
 
+            this._modpackManager.setInfo('libs', {
+                version: info.version.split('v')[1]
+            }, version);
             return downloaded_path;
         }
     }
@@ -623,7 +635,7 @@ class ModpackInstaller {
     //. >>> MODPACKS
     //#region MODPACKS ---------------------------------------------------
 
-    public async getLatestLinkToModpack(modpack_name: string): Promise<string> {
+    public async getLatestLinkToModpack(modpack_name: string): Promise<{link: string, version: string}> {
         return new Promise((resolve, reject) => {
             nodeFetch(`https://api.github.com/repos/Ektadelta/${capitalizeFirstLetter(modpack_name)}/tags`, {
                 method: 'GET',
@@ -634,12 +646,15 @@ class ModpackInstaller {
                 }
             }).catch(err => { log.error(err) })
         }).then(res => {
-            return `https://github.com/Ektadelta/${capitalizeFirstLetter(modpack_name)}/releases/download/${res}/${capitalizeFirstLetter(modpack_name)}-${res}.zip`
+            return { 
+                link: `https://github.com/Ektadelta/${capitalizeFirstLetter(modpack_name)}/releases/download/${res}/${capitalizeFirstLetter(modpack_name)}-${res}.zip`, 
+                version: (res as string) 
+            }
         })
     }
 
     public async downloadModpackArchive(modpack_name: string, force_download=false) {
-        let link = await this.getLatestLinkToModpack(modpack_name);
+        let info = await this.getLatestLinkToModpack(modpack_name);
         let folder = await this._modpackManager.ensureModpackDir(modpack_name);
         log.info(`[MODPACK] <modpack\\${modpack_name}> downloading archive...`);
 
@@ -649,7 +664,7 @@ class ModpackInstaller {
         } else {
             let downloaded_path = await this._downloader.download(
                 folder,
-                link,
+                info.link,
                 'modpack.zip',
                 this._settingsStorage.settings.download_threads,
                 (progress: any) => {
@@ -661,6 +676,9 @@ class ModpackInstaller {
                 }
             )
 
+            this._modpackManager.setInfo(modpack_name, {
+                version: info.version.split('v')[1]
+            });
             return downloaded_path;
         }
     }
@@ -865,7 +883,7 @@ class ProcessManager {
 
     os_version = os.release().split(".")[0];
     launched_modpacks: {
-        [key: string]: { process: ChildProcess | undefined, launch_time: Date },
+        [key: string]: { process: ChildProcess | undefined, launch_time: Date, hour_delta: number },
     } = {};
     public async launchModpack(modpack_name: string, min_ram: number, max_ram: number, username: string, uuid: string): Promise<string> {
         return new Promise(async (_resolve, reject) => {
@@ -953,6 +971,7 @@ class ProcessManager {
                 [modpack_name]: {
                     process: process,
                     launch_time: new Date(),
+                    hour_delta: (new Date(Math.abs((new Date()).getTime() - (new Date()).getTime()))).getHours()
                 }
             }
             this._modpackManager.status = 'idle';
@@ -1051,6 +1070,10 @@ class ProcessManager {
             } else if (parameter.includes("-Xms")) {
                 let par_prototype = `-Xms1000M`;
                 command = command.replace(par_prototype, parameter);
+                continue;
+            } else if (parameter.includes("--username")) {
+                continue;
+            } else if (parameter.includes("--uuid")) {
                 continue;
             } else if (parameter.includes("-username")) {
                 continue;

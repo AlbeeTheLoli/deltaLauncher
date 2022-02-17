@@ -186,7 +186,7 @@ window.onload = async () => {
         console.log('reloading');
         
         //@ts-expect-error
-        window.modpackManager.updateModpackDirs();
+        window.modpackManager.updateModpacksInfo();
         //@ts-expect-error
         window.settingsInterface.updateThemesList()
         

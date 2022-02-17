@@ -31,7 +31,7 @@
                     onclick: async () => {
                         console.log('Deintalling', $global.modpackManager.modpack)
                         await $global.modpackManager.modpackInstaller.uninstallModpack($global.modpackManager.modpack);
-                        await $global.modpackManager.updateModpackDirs();
+                        await $global.modpackManager.updateModpacksInfo();
                         $global.modpackManager.modpacks[$global.modpackManager.modpack].installed = false;
                     }
                 },
@@ -153,7 +153,7 @@
                         console.log('cancelling download for:', $global.modpackManager.modpack)
                         await $global.modpackManager.cancelCurrentDownload();
                         await $global.modpackManager.modpackInstaller.uninstallModpack($global.modpackManager.modpack);
-                        await $global.modpackManager.updateModpackDirs();
+                        await $global.modpackManager.updateModpacksInfo();
                         paused = false;
                         $global.modpackManager.modpack = $global.modpackManager.modpack;
                         $global.state = 'idle';
@@ -179,7 +179,7 @@
                         console.log('cancelling download for:', $global.modpackManager.modpack)
                         await $global.modpackManager.cancelCurrentDownload();
                         await $global.modpackManager.modpackInstaller.uninstallModpack($global.modpackManager.modpack);
-                        await $global.modpackManager.updateModpackDirs();
+                        await $global.modpackManager.updateModpacksInfo();
                         paused = false;
                         $global.modpackManager.modpack = $global.modpackManager.modpack;
                         $global.state = 'idle';
