@@ -210,6 +210,8 @@
         height: 100%;
 
         --dropmenu-main-bg: var(--playmenu-main-bg);
+        --dropmenu-main-open-sub: var(--playmenu-main-open-sub);
+        --dropmenu-main-open-sub-fill: var(--playmenu-main-open-sub-fill);
         --dropmenu-main-h1: var(--playmenu-main-h1);
         --dropmenu-main-p: var(--playmenu-main-p);
         --dropmenu-sub-even-bg: var(--playmenu-sub-even-bg);
@@ -220,6 +222,8 @@
         --dropmenu-toggle-fill: var(--playmenu-toggle-fill);
         
         --dropmenu-main-bg-hover: var(--playmenu-main-bg-hover);
+        --dropmenu-main-open-sub-hover: var(--playmenu-main-open-sub-hover);
+        --dropmenu-main-open-sub-fill-hover: var(--playmenu-main-open-sub-fill-hover);
         --dropmenu-main-h1-hover: var(--playmenu-main-h1-hover);
         --dropmenu-main-p-hover: var(--playmenu-main-p-hover);
         --dropmenu-sub-even-bg-hover: var(--playmenu-sub-even-bg-hover);

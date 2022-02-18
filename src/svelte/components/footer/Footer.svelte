@@ -70,7 +70,7 @@
         }
     }
 
-    $: last_version = 'v0.0.0.0'
+    $: last_version = '0.0.0.0'
 
 </script>
 

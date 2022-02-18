@@ -27,6 +27,8 @@
         'Аккаунт'
     ]
 
+	$: expand_scrollbar = false;
+
 	let section = SECTIONS.SETTINGS;
 
 	onMount(async () => {
@@ -134,13 +136,13 @@
 <Nav {section_names} bind:section={section} userData={$global.authInterface.logged_user} />
 
 <main class:reduced-motion={$global.settingsManager.settings.appearance.reduced_motion}>
-	<div class="section-wrapper custom-scrollbar" class:left={section < SECTIONS.HOME} class:right={section > SECTIONS.HOME}>
+	<div class="section-wrapper custom-scrollbar" class:expand={expand_scrollbar} class:left={section < SECTIONS.HOME} class:right={section > SECTIONS.HOME}>
 		<Home />
 	</div>
-	<div class="section-wrapper custom-scrollbar" class:left={section < SECTIONS.SETTINGS} class:right={section > SECTIONS.SETTINGS}>
+	<div class="section-wrapper custom-scrollbar" class:expand={expand_scrollbar} class:left={section < SECTIONS.SETTINGS} class:right={section > SECTIONS.SETTINGS}>
 		<Settings />
 	</div>
-	<div class="section-wrapper custom-scrollbar" class:left={section < SECTIONS.ACCOUNT} class:right={section > SECTIONS.ACCOUNT}>
+	<div class="section-wrapper custom-scrollbar" class:expand={expand_scrollbar} class:left={section < SECTIONS.ACCOUNT} class:right={section > SECTIONS.ACCOUNT}>
 		<Account />
 	</div>
 </main>

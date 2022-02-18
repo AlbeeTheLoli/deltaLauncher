@@ -137,8 +137,8 @@ ipcRenderer.on('window-id', (_, arg) => {
 window.onbeforeload = () => {
     console.log('preloading... <<<');
 
-    settingsInterface.theme = settingsInterface.settings.appearance.default_dark_theme ? ':dark:' : '';
-    // settingsInterface.theme = settingsInterface.settings.appearance.theme;
+    // settingsInterface.theme = settingsInterface.settings.appearance.default_dark_theme ? ':dark:' : '';
+    settingsInterface.theme = settingsInterface.settings.appearance.theme;
     settingsInterface.bg = settingsInterface.settings.appearance.bg;
     settingsInterface.filter_opacity = settingsInterface.settings.appearance.filter_opacity;
     settingsInterface.blur_amount = settingsInterface.settings.appearance.blur_amount;
@@ -159,8 +159,13 @@ window.onload = async () => {
     console.log('loading... <<<');
 
     if (settingsInterface.settings.dev_mode) document.body.classList.add('dev');
-    (document.getElementById('bg-video') as HTMLVideoElement).volume = settingsInterface.settings.appearance.bg_volume / 100;
-    (document.getElementById('bg-video') as HTMLVideoElement).muted = false;
+    let vid = (document.getElementById('bg-video') as HTMLVideoElement);
+    vid.volume = settingsInterface.settings.appearance.bg_volume / 100;
+    vid.muted = false;
+    vid.oncanplay = async () => {
+        vid.style.transition = '';
+        vid.classList.add('loaded');
+    }
     
     document.getElementById('app-exit')?.addEventListener('click', () => {
         console.log('exiting');

@@ -11,8 +11,8 @@
     --bg-primary: rgb(22, 22, 22);
     --bg-secondary: rgb(16, 16, 16);
     --bg-secondary-alt: rgb(11, 11, 11);
-    --bg-tertiary: #C6C6C6;
-    --bg-tertiary-alt: #B4B4B4;
+    --bg-tertiary: rgb(34, 34, 34);
+    --bg-tertiary-alt:rgb(41, 41, 41);
     --bg-hover: var(--bg-secondary);
     --bg-hover-alt: var(--bg-secondary-alt);
 

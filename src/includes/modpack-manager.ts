@@ -296,7 +296,7 @@ export class ModpackManager {
             let controls_object = { ...this._settingsStorage.settings.modpack_settings.controls };
             // Dismount is the same as the crouch
             //@ts-expect-error
-            controls_object.dismount = controls_object.crouch;
+            controls_object.dismount = { ...controls_object.crouch };
             //@ts-expect-error
             controls_object.dismount.minecraft_key = 'key_key.dismount';
     

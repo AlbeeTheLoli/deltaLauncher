@@ -28,7 +28,7 @@
         cursor: pointer;
         background: rgba(var(--text-primary-rgb), 0);
         border: rgba(var(--text-primary-rgb), .16) 2px solid;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
 
         transition: background .16s cubic-bezier(0.165, 0.84, 0.44, 1),
@@ -46,7 +46,9 @@
 
     .button.small {
         font-size: 13px;
-        min-width: 128px;
+        padding: 0 16px;
+        max-width: fit-content;
+        min-width: fit-content;
     }
 
     .button:hover {

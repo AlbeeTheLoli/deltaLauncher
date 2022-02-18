@@ -7,6 +7,7 @@
     export let p = '';
 
     export let show_sub = false;
+    let pre_show_sub = false;
     export let locked = false;
 
     function toggle(el: HTMLDivElement, btn) {
@@ -26,7 +27,7 @@
     }
 </script>
 
-<div class:show-sub={show_sub} class:locked={locked} class="dropmenu-container noselect" on:mouseleave={() => show_sub = false}>
+<div class:show-sub={show_sub} class:strict={strict} class:pre-show-sub={pre_show_sub} class:locked={locked} class="dropmenu-container noselect" on:mouseleave={() => show_sub = false}>
     {#each menus as btn, i}
         {#if btn.toggle}
             <div style="--order: {i}" class="sub-menu toggle">
@@ -47,7 +48,7 @@
         {/if}
     {/each}
     <div class="main-menu">
-        <div on:mouseenter={() => show_sub = !strict} id="main-menu" class="info" on:click={() => {if (!locked) onclick()}}>
+        <div on:mouseenter={() => {pre_show_sub = strict; show_sub = !strict}} on:mouseleave={() => pre_show_sub = false} id="main-menu" class="info" on:click={() => {if (!locked) onclick()}}>
             {#if h1 && h1 != ''}<h1>{h1}</h1>{/if}
             {#if p && p != ''}<p>{p}</p>{/if}
         </div>
@@ -138,7 +139,33 @@
         /* transition: all .16s cubic-bezier(0.165, 0.84, 0.44, 1); */
     }
 
-    .open-sub-menu.active {
+    .dropmenu-container.strict .main-menu > .open-sub-menu:hover {
+        background-color: var(--dropmenu-main-bg-hover);
+        --fill: var(--dropmenu-main-h1-hover);
+    }
+
+    .open-sub-menu > * {
+        top: 0;
+        position: relative;
+
+        transition: top .16s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .show-sub .open-sub-menu > *, .pre-show-sub .open-sub-menu > * {
+        top: 3px !important;
+    }
+
+    .dropmenu-container:not(.strict) .main-menu:hover .open-sub-menu {
+        background-color: var(--dropmenu-main-bg-hover);
+        --fill: var(--dropmenu-main-h1-hover);
+    }
+    
+    .dropmenu-container:not(.strict) .main-menu:hover .info {
+        background-color: var(--dropmenu-main-bg-hover);
+        --fill: var(--dropmenu-main-h1-hover);
+    }
+
+    .show-sub.strict .open-sub-menu {
         background-color: var(--dropmenu-main-bg-hover);
         --fill: var(--dropmenu-main-h1-hover);
     }
@@ -177,6 +204,11 @@
     .sub-menu:nth-child(2n + 1) .info:hover {
         color: var(--dropmenu-sub-h1-hover);
         background: var(--dropmenu-sub-odd-bg-hover);
+    }
+
+    .dropmenu-container.pre-show-sub .sub-menu {
+        opacity: .8;
+        bottom: calc(var(--order) * 8px + var(--footer-height) / 4);
     }
 
     .dropmenu-container.show-sub .sub-menu {

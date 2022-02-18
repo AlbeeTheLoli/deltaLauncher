@@ -12,6 +12,8 @@
     import Scrollable from '../../components/Scrollable.svelte';
     import TextField from '../../components/TextField.svelte'
     import { onMount } from "svelte";
+    import ThemeSelector from "../../components/settings/_ThemeSelector.svelte";
+    import Button from "../../components/Button.svelte";
 
     let modpack_info = $global.modpackManager.MODPACK_INFO;
 
@@ -23,6 +25,8 @@
     $: can_play = $global.settingsManager.settings.bypass_ram_restricions || !((max_ram < min_ram) || ((max_ram - min_ram) < 0));
     $: ram_step = (max_ram > 16) ? 1 : (max_ram % 4 == 0 ? .2 : .5);
     $: ram_value_step = (max_ram > 16) ? (max_ram % 4 == 0 ? 4 : (max_ram % 2 == 0 ? 2 : 1)) : (max_ram % 4 == 0 ? 5 : 2);
+
+    $: show_user_themes = true;
 
     let bg_video_element = undefined;
     onMount(() => {
@@ -90,6 +94,37 @@
     </SettingsContainer>
 
     <SettingsContainer title='Лаунчер'>
+        <Setting title='Тема'>
+            <h1>Текущая тема:</h1>
+            <div class="smoll-gap"></div>
+            <p class="just-button">{($global.settingsManager.theme == '' || $global.settingsManager.theme == ':dark:') ? ($global.settingsManager.theme == '' ? 'Стандартная Светлая' : 'Стандартная Тёмная') : $global.settingsManager.themes[$global.settingsManager.theme].name}</p>
+            <div class="big-gap"></div>
+            <div class="gap"></div>
+            <div class="gap"></div>
+            <!-- <div class="smoll-gap"></div> -->
+            
+            <!-- <Checkbox label="Темная тема" bind:checked={$global.settingsManager.settings.appearance.default_dark_theme} onchange={() => {
+                $global.settingsManager.theme = $global.settingsManager.settings.appearance.default_dark_theme ? ':dark:' : ''
+            }}></Checkbox> -->
+            <ThemeSelector bind:show_user_themes/>
+            <h1>Дополнительно:</h1>
+            <div class="gap"></div>
+            <p class="just-button" on:click={() => {
+                global.shell.openExternal(`https://github.com/AlbeeTheLoli/deltaLauncherOld/tree/main/themes`);
+            }}>Список доступных тем</p>
+            <div class="gap"></div>
+            <p class="just-button" on:click={() => {
+                if ($global.settingsManager.themes_path) global.shell.openPath($global.settingsManager.themes_path);
+            }}>Открыть папку с темами</p>
+            <div class="big-gap"></div>
+            <div class="big-gap"></div>
+            <Button locked={!show_user_themes} onclick={async () => {
+                show_user_themes = false;
+                await $global.settingsManager.updateThemesList();
+                await new Promise((resolve, reject) => { setTimeout(() => {resolve(undefined)}, 500) } );
+                show_user_themes = true;
+            }}>Обновить список тем</Button>
+        </Setting>
         <Setting title='Задний фон' tip={{
           h1: 'Поддерживаемые форматы: png, jpg, jpeg, gif, mp4, mov',
           p: 'При использовании видео-файлов на заднем плане лаунчер может потреблять дополнительные мощности видеокарты.' 
@@ -142,19 +177,15 @@
         <Setting title='Полезные функции' bordered={false}>
             <p class="just-button" on:click={() => {
                 if ($global.settingsManager.root) global.shell.openPath($global.settingsManager.root);
-            }}>Открыть корневую папку</p>
+            }}>Показать корневую папку</p>
             <div class="gap"></div>
             <p class="just-button" on:click={() => {
                 if ($global.settingsManager.settings_path) global.shell.showItemInFolder($global.settingsManager.settings_path);
-            }}>Открыть файл настроек</p>
+            }}>Показать файл настроек</p>
             <div class="gap"></div>
             <p class="just-button" on:click={() => {
                 if ($global.settingsManager.logs_path) global.shell.openPath($global.settingsManager.logs_path);
-            }}>Открыть папку с логами</p>
-            <div class="gap"></div>
-            <p class="just-button" on:click={() => {
-                if ($global.settingsManager.themes_path) global.shell.openPath($global.settingsManager.themes_path);
-            }}>Открыть папку с темами</p>
+            }}>Показать папку с логами</p>
             <div class="big-gap"></div>
             <div class="big-gap"></div>
             <Checkbox label="Убрать анимации" bind:checked={$global.settingsManager.settings.appearance.reduced_motion}></Checkbox>
@@ -171,15 +202,10 @@
                 <div class="smoll-gap"></div>
             {/if}
         </Setting>
-        <Setting title='Тема' bordered={false}>
-            <Checkbox label="Темная тема" bind:checked={$global.settingsManager.settings.appearance.default_dark_theme} onchange={() => {
-                $global.settingsManager.theme = $global.settingsManager.settings.appearance.default_dark_theme ? ':dark:' : ''
-            }}></Checkbox>
-        </Setting>
         {#if $global.settingsManager.settings.dev_mode}
             <Setting title='Экспериментальная ветка'>
                 <input bind:value={$global.modpackManager.sha} on:change={() => {
-                    $global.modpackManager.updateModpackDirs();
+                    $global.modpackManager.updateModpacksInfo();
                     $global.modpackManager.modpacks[$global.modpackManager.modpack].installed = $global.modpackManager.modpacks[$global.modpackManager.modpack].installed;
                 }} class="java-params" type="text" placeholder="Не указаны">
             </Setting>
@@ -305,14 +331,17 @@
 
     .big-gap {
         height: 16px;
+        width: 16px;
     }
     
     .gap {
         height: 8px;
+        width: 8px;
     }
 
     .smoll-gap {
         height: 2px;
+        width: 2px;
     }
 
     .general-info {

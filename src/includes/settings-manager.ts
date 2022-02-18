@@ -179,7 +179,7 @@ export class SettingsStorage {
         this._themes = {
             ...this._themes,
             ':dark:': {
-                name: 'dark-default',
+                name: 'Стандартная тёмная',
                 author: 'Albee',
                 version: '1.0.0',
                 description: 'Dark variant of default theme',
@@ -269,9 +269,11 @@ export class SettingsInterface {
     }
 
     public async updateThemesList() {
-        await remote.getGlobal('settingsStorage').updateThemesList();
-        this._themes = remote.getGlobal('settingsStorage')._themes;
-        return;
+        return new Promise((resolve, _) => {
+            remote.getGlobal('settingsStorage').updateThemesList();
+            this._themes = remote.getGlobal('settingsStorage')._themes;
+            resolve(null)
+        })
     }
 
     public async save() {
@@ -364,6 +366,8 @@ export class SettingsInterface {
                 log.info('applying video bg', to);
                 let bg_el = document.getElementById('bg-video') as HTMLVideoElement;
                 if (bg_el) {
+                    bg_el.style.transition = 'none';
+                    bg_el.classList.remove('loaded');
                     document.body.classList.add('video');
                     bg_el.parentElement?.parentElement?.classList.remove('plain');
                     if (fs.existsSync(to)) {
